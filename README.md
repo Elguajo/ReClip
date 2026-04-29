@@ -51,21 +51,32 @@ Compared with the original ReClip repo, this fork adds:
 
 ## Quick Start
 
-### macOS install (one command)
+### Download for macOS
 
-```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Elguajo/ReClip/main/install.sh)"
-```
-
-The installer will:
-
-1. Install dependencies with Homebrew (`python3`, `git`, `yt-dlp`, `ffmpeg`)
-2. Download or update ReClip in `~/.reclip`
-3. Create the Python virtual environment and install Python packages
-4. Install `ReClip.app` into `/Applications`
-5. Offer to launch the app
+Download the latest `ReClip.app.zip` from
+[GitHub Releases](https://github.com/Elguajo/ReClip/releases), unzip it, and
+move `ReClip.app` to `/Applications`.
 
 After installation: press **Cmd+Space**, type **ReClip**, and launch it.
+
+The release build bundles Python dependencies and `ffmpeg`, so you do not need
+to clone the repository or run an install script.
+
+### Creating a GitHub Release
+
+On a Mac with Python 3 and `ffmpeg` installed:
+
+```bash
+brew install python3 ffmpeg
+./build-macos-app.sh
+ditto -c -k --keepParent dist/ReClip.app ReClip.app.zip
+```
+
+Then create a new GitHub Release, upload `ReClip.app.zip` as the release asset,
+and publish it.
+
+The current standalone build is not codesigned or notarized, so macOS may show a
+security warning the first time it is opened.
 
 ### Manual run
 
