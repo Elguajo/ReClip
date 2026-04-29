@@ -9,10 +9,6 @@ if ! command -v python3 &> /dev/null; then
     missing="$missing python3"
 fi
 
-if ! command -v yt-dlp &> /dev/null; then
-    missing="$missing yt-dlp"
-fi
-
 if ! command -v ffmpeg &> /dev/null; then
     missing="$missing ffmpeg"
 fi
@@ -44,6 +40,8 @@ fi
 
 PORT="${PORT:-8899}"
 export PORT
+
+export PATH="$PWD/venv/bin:$PATH"
 
 echo ""
 echo "  ReClip is running at http://localhost:$PORT"

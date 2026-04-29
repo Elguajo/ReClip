@@ -30,6 +30,15 @@ cd reclip
 
 Open **http://localhost:8899**.
 
+On macOS, you can also launch the native app wrapper:
+
+```bash
+open ReClip.app
+```
+
+The native wrapper uses the same Flask app and project virtual environment, so
+`yt-dlp` and `certifi` are installed together.
+
 Or with Docker:
 
 ```bash
@@ -54,8 +63,9 @@ YouTube, TikTok, Instagram, Twitter/X, Reddit, Facebook, Vimeo, Twitch, Dailymot
 
 - **Backend:** Python + Flask (~150 lines)
 - **Frontend:** Vanilla HTML/CSS/JS (single file, no build step)
+- **Native macOS wrapper:** PyObjC + WKWebView
 - **Download engine:** [yt-dlp](https://github.com/yt-dlp/yt-dlp) + [ffmpeg](https://ffmpeg.org/)
-- **Dependencies:** 2 (Flask, yt-dlp)
+- **Dependencies:** Flask, yt-dlp, certifi, and macOS-only PyObjC packages
 
 ## Disclaimer
 

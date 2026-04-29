@@ -7,7 +7,10 @@ import threading
 from flask import Flask, request, jsonify, send_file, render_template
 
 app = Flask(__name__)
-DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), "downloads")
+DOWNLOAD_DIR = os.environ.get(
+    "RECLIP_DOWNLOAD_DIR",
+    os.path.join(os.path.dirname(__file__), "downloads"),
+)
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
 jobs = {}
