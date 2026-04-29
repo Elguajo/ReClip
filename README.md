@@ -69,35 +69,6 @@ this app only:
 xattr -dr com.apple.quarantine /Applications/ReClip.app
 ```
 
-### Creating a GitHub Release
-
-On a Mac with Python 3 and `ffmpeg` installed:
-
-```bash
-brew install python3 ffmpeg
-./release-macos.sh v1.0.0 --dmg
-```
-
-This creates versioned assets in `release/`:
-
-- `ReClip-v1.0.0-macOS.zip`
-- `ReClip-v1.0.0-macOS.zip.sha256`
-- `ReClip-v1.0.0-macOS.dmg`
-- `ReClip-v1.0.0-macOS.dmg.sha256`
-
-To publish directly with GitHub CLI:
-
-```bash
-gh auth login
-./release-macos.sh v1.0.0 --dmg --publish
-```
-
-The publish step creates the `v1.0.0` git tag, pushes it to GitHub, creates the
-GitHub Release, and uploads the ZIP, DMG, and checksum files.
-
-The current standalone build is not codesigned or notarized, so macOS may show a
-security warning the first time it is opened.
-
 ### Manual run
 
 ```bash
