@@ -53,7 +53,7 @@ Compared with the original ReClip repo, this fork adds:
 
 ### Download for macOS
 
-Download the latest `ReClip.app.zip` from
+Download the latest `ReClip-*-macOS.zip` from
 [GitHub Releases](https://github.com/Elguajo/ReClip/releases), unzip it, and
 move `ReClip.app` to `/Applications`.
 
@@ -62,18 +62,38 @@ After installation: press **Cmd+Space**, type **ReClip**, and launch it.
 The release build bundles Python dependencies and `ffmpeg`, so you do not need
 to clone the repository or run an install script.
 
+If macOS blocks the app because it is not notarized yet, remove quarantine for
+this app only:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/ReClip.app
+```
+
 ### Creating a GitHub Release
 
 On a Mac with Python 3 and `ffmpeg` installed:
 
 ```bash
 brew install python3 ffmpeg
-./build-macos-app.sh
-ditto -c -k --keepParent dist/ReClip.app ReClip.app.zip
+./release-macos.sh v1.0.0 --dmg
 ```
 
-Then create a new GitHub Release, upload `ReClip.app.zip` as the release asset,
-and publish it.
+This creates versioned assets in `release/`:
+
+- `ReClip-v1.0.0-macOS.zip`
+- `ReClip-v1.0.0-macOS.zip.sha256`
+- `ReClip-v1.0.0-macOS.dmg`
+- `ReClip-v1.0.0-macOS.dmg.sha256`
+
+To publish directly with GitHub CLI:
+
+```bash
+gh auth login
+./release-macos.sh v1.0.0 --dmg --publish
+```
+
+The publish step creates the `v1.0.0` git tag, pushes it to GitHub, creates the
+GitHub Release, and uploads the ZIP, DMG, and checksum files.
 
 The current standalone build is not codesigned or notarized, so macOS may show a
 security warning the first time it is opened.

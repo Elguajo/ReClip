@@ -3,6 +3,20 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
+remove_build_path() {
+    local path="$1"
+
+    [ -e "$path" ] || return 0
+
+    for _ in 1 2 3; do
+        find "$path" -name .DS_Store -delete 2>/dev/null || true
+        rm -rf "$path" 2>/dev/null && return 0
+        sleep 0.2
+    done
+
+    rm -rf "$path"
+}
+
 if [ "$(uname -s)" != "Darwin" ]; then
     echo "This build script must be run on macOS."
     exit 1
@@ -29,7 +43,9 @@ source venv/bin/activate
 python -m pip install -q --upgrade pip
 python -m pip install -q -r requirements.txt -r requirements-build.txt
 
-rm -rf build dist ReClip.spec
+remove_build_path build
+remove_build_path dist
+rm -f ReClip.spec
 
 pyinstaller_args=(
     --noconfirm

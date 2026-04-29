@@ -13,3 +13,8 @@ assets/*.mov
 build/
 dist/
 *.spec
+release/
+ReClip-*-macOS.zip
+ReClip-*-macOS.zip.sha256
+ReClip-*-macOS.dmg
+ReClip-*-macOS.dmg.sha256
