@@ -32,6 +32,7 @@ echo "Dependencies are ready."
 echo "[2/5] Downloading ReClip..."
 if [ -d "$INSTALL_DIR/.git" ]; then
     cd "$INSTALL_DIR"
+    git remote set-url origin "$REPO"
     git fetch --quiet origin main
     git reset --quiet --hard origin/main
 elif [ -d "$INSTALL_DIR" ]; then
