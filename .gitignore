@@ -10,3 +10,6 @@ assets/*.mov
 .env.development
 
 .kilo/
+build/
+dist/
+*.spec

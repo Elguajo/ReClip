@@ -1,42 +1,130 @@
 import os
 import uuid
 import glob
-import json
-import subprocess
+import shutil
+import sys
 import threading
 from flask import Flask, request, jsonify, send_file, render_template
+from yt_dlp import YoutubeDL
 
-app = Flask(__name__)
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def _runtime_roots():
+    roots = []
+    meipass = getattr(sys, "_MEIPASS", None)
+    if meipass:
+        roots.append(meipass)
+
+    if getattr(sys, "frozen", False):
+        contents_dir = os.path.dirname(os.path.dirname(sys.executable))
+        roots.extend([
+            os.path.join(contents_dir, "Resources"),
+            os.path.join(contents_dir, "Frameworks"),
+            contents_dir,
+        ])
+
+    roots.append(APP_DIR)
+    return roots
+
+
+def _find_runtime_dir(name):
+    for root in _runtime_roots():
+        candidate = os.path.join(root, name)
+        if os.path.isdir(candidate):
+            return candidate
+    return os.path.join(APP_DIR, name)
+
+
+def _find_bundled_bin_dir():
+    for root in _runtime_roots():
+        candidate = os.path.join(root, "bin")
+        if os.path.isfile(os.path.join(candidate, "ffmpeg")):
+            return candidate
+    return os.path.join(APP_DIR, "bin")
+
+
+BUNDLED_BIN_DIR = _find_bundled_bin_dir()
+
+if os.path.isdir(BUNDLED_BIN_DIR):
+    os.environ["PATH"] = BUNDLED_BIN_DIR + os.pathsep + os.environ.get("PATH", "")
+
+try:
+    import certifi
+
+    os.environ.setdefault("SSL_CERT_FILE", certifi.where())
+    os.environ.setdefault("REQUESTS_CA_BUNDLE", certifi.where())
+except Exception:
+    pass
+
+app = Flask(
+    __name__,
+    template_folder=_find_runtime_dir("templates"),
+    static_folder=_find_runtime_dir("static"),
+)
 DOWNLOAD_DIR = os.environ.get(
     "RECLIP_DOWNLOAD_DIR",
-    os.path.join(os.path.dirname(__file__), "downloads"),
+    os.path.join(os.path.expanduser("~"), "Downloads", "ReClip")
+    if getattr(sys, "frozen", False)
+    else os.path.join(APP_DIR, "downloads"),
 )
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
 jobs = {}
 
 
+def _ffmpeg_location():
+    bundled_ffmpeg = os.path.join(BUNDLED_BIN_DIR, "ffmpeg")
+    if os.path.isfile(bundled_ffmpeg):
+        return BUNDLED_BIN_DIR
+
+    ffmpeg = shutil.which("ffmpeg")
+    return os.path.dirname(ffmpeg) if ffmpeg else None
+
+
+def _yt_dlp_options(**extra):
+    opts = {
+        "noplaylist": True,
+        "quiet": True,
+        "no_warnings": True,
+        "noprogress": True,
+    }
+    ffmpeg_dir = _ffmpeg_location()
+    if ffmpeg_dir:
+        opts["ffmpeg_location"] = ffmpeg_dir
+    opts.update(extra)
+    return opts
+
+
 def run_download(job_id, url, format_choice, format_id):
     job = jobs[job_id]
     out_template = os.path.join(DOWNLOAD_DIR, f"{job_id}.%(ext)s")
 
-    cmd = ["yt-dlp", "--no-playlist", "-o", out_template]
-
     if format_choice == "audio":
-        cmd += ["-x", "--audio-format", "mp3"]
+        ydl_opts = _yt_dlp_options(
+            outtmpl=out_template,
+            format="bestaudio/best",
+            postprocessors=[{
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": "mp3",
+            }],
+        )
     elif format_id:
-        cmd += ["-f", f"{format_id}+bestaudio/best", "--merge-output-format", "mp4"]
+        ydl_opts = _yt_dlp_options(
+            outtmpl=out_template,
+            format=f"{format_id}+bestaudio/best",
+            merge_output_format="mp4",
+        )
     else:
-        cmd += ["-f", "bestvideo+bestaudio/best", "--merge-output-format", "mp4"]
-
-    cmd.append(url)
+        ydl_opts = _yt_dlp_options(
+            outtmpl=out_template,
+            format="bestvideo+bestaudio/best",
+            merge_output_format="mp4",
+        )
 
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
-        if result.returncode != 0:
-            job["status"] = "error"
-            job["error"] = result.stderr.strip().split("\n")[-1]
-            return
+        with YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
 
         files = glob.glob(os.path.join(DOWNLOAD_DIR, f"{job_id}.*"))
         if not files:
@@ -68,9 +156,6 @@ def run_download(job_id, url, format_choice, format_id):
             job["filename"] = f"{safe_title}{ext}" if safe_title else os.path.basename(chosen)
         else:
             job["filename"] = os.path.basename(chosen)
-    except subprocess.TimeoutExpired:
-        job["status"] = "error"
-        job["error"] = "Download timed out (5 min limit)"
     except Exception as e:
         job["status"] = "error"
         job["error"] = str(e)
@@ -88,13 +173,9 @@ def get_info():
     if not url:
         return jsonify({"error": "No URL provided"}), 400
 
-    cmd = ["yt-dlp", "--no-playlist", "-j", url]
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-        if result.returncode != 0:
-            return jsonify({"error": result.stderr.strip().split("\n")[-1]}), 400
-
-        info = json.loads(result.stdout)
+        with YoutubeDL(_yt_dlp_options(skip_download=True)) as ydl:
+            info = ydl.extract_info(url, download=False)
 
         # Build quality options — keep best format per resolution
         best_by_height = {}
@@ -121,8 +202,6 @@ def get_info():
             "uploader": info.get("uploader", ""),
             "formats": formats,
         })
-    except subprocess.TimeoutExpired:
-        return jsonify({"error": "Timed out fetching video info"}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 

@@ -39,6 +39,16 @@ open ReClip.app
 The native wrapper uses the same Flask app and project virtual environment, so
 `yt-dlp` and `certifi` are installed together.
 
+To build a standalone macOS app bundle:
+
+```bash
+./build-macos-app.sh
+open dist/ReClip.app
+```
+
+The standalone build bundles Python dependencies and the local `ffmpeg` binary.
+It is not codesigned or notarized.
+
 Or with Docker:
 
 ```bash
