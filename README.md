@@ -20,7 +20,7 @@ https://github.com/user-attachments/assets/419d3e50-c933-444b-8cab-a9724986ba05
 - Bulk downloads — paste multiple URLs at once
 - Automatic URL deduplication
 - Choose where downloaded files are saved
-- Open the downloads folder or reveal a finished file in Finder
+- Reveal a finished file in Finder
 - Light/dark theme toggle with saved preference
 - Native macOS app wrapper with a WKWebView window
 - Progress, cancel, retry, and safer job state handling
@@ -33,8 +33,8 @@ Compared with the original ReClip repo, this fork adds:
 - **Configurable save location:** use the folder button in the top-right corner
   to choose where ReClip saves completed downloads. The choice is persisted in
   `~/.reclip/config.json`.
-- **Finder actions:** open the active downloads folder, or click **Show** after a
-  download finishes to reveal the saved file in Finder.
+- **Finder action:** click **Show** after a download finishes to reveal the saved
+  file in Finder.
 - **Dark theme:** a top-right theme button toggles light/dark mode and stores the
   preference in `localStorage`.
 - **Safer download pipeline:** files are downloaded to an internal temp folder,
@@ -51,10 +51,28 @@ Compared with the original ReClip repo, this fork adds:
 
 ## Quick Start
 
+### macOS install (one command)
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Elguajo/ReClip/main/install.sh)"
+```
+
+The installer will:
+
+1. Install dependencies with Homebrew (`python3`, `git`, `yt-dlp`, `ffmpeg`)
+2. Download or update ReClip in `~/.reclip`
+3. Create the Python virtual environment and install Python packages
+4. Install `ReClip.app` into `/Applications`
+5. Offer to launch the app
+
+After installation: press **Cmd+Space**, type **ReClip**, and launch it.
+
+### Manual run
+
 ```bash
 brew install yt-dlp ffmpeg    # or apt install ffmpeg && pip install yt-dlp
-git clone https://github.com/averygan/reclip.git
-cd reclip
+git clone https://github.com/Elguajo/ReClip.git
+cd ReClip
 ./reclip.sh
 ```
 
@@ -91,7 +109,7 @@ docker build -t reclip . && docker run -p 8899:8899 reclip
 2. Choose **MP4** (video) or **MP3** (audio)
 3. Click **Fetch** to load video info and thumbnails
 4. Select quality/resolution if available
-5. Optional: click the folder-plus button in the top-right corner to choose a save folder
+5. Optional: click the folder button in the top-right corner to choose a save folder
 6. Click **Download** on individual videos, or **Download All**
 7. Click **Show** to reveal the saved file in Finder, or use **Save As** for a browser download copy
 
