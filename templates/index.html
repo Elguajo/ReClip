@@ -361,23 +361,27 @@
       text-align: right;
     }
 
-    .q-chip {
-      padding: 4px 10px;
+    .quality-select {
+      padding: 5px 26px 5px 10px;
       border: 1.5px solid var(--card-border);
       border-radius: 6px;
-      background: transparent;
-      color: var(--muted);
+      background-color: var(--card);
+      color: var(--fg);
       font-family: 'DM Mono', monospace;
       font-size: 0.65rem;
       cursor: pointer;
-      transition: all 0.2s;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'><path fill='none' stroke='%239c9889' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M1 1.5l5 5 5-5'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 9px center;
+      background-size: 8px;
+      transition: border-color 0.2s;
     }
-    .q-chip.active {
-      border-color: var(--fg);
-      color: var(--fg);
-      background: rgba(26,26,24,0.04);
-    }
-    .q-chip:hover:not(.active) { border-color: var(--muted); }
+    .quality-select:hover:not(:disabled) { border-color: var(--muted); }
+    .quality-select:focus { outline: none; border-color: var(--accent); }
+    .quality-select:disabled { cursor: not-allowed; opacity: 0.6; }
 
     /* Error card */
     .card.card-error {
@@ -581,6 +585,15 @@
       return ` · ${fmtDur(s)} left`;
     }
 
+    function formatSize(bytes) {
+      if (!bytes || bytes <= 0) return '';
+      const KB = 1024, MB = KB * 1024, GB = MB * 1024;
+      if (bytes >= GB) return `~${(bytes / GB).toFixed(1)} GB`;
+      if (bytes >= MB) return `~${Math.round(bytes / MB)} MB`;
+      if (bytes >= KB) return `~${Math.round(bytes / KB)} KB`;
+      return `~${bytes} B`;
+    }
+
     function esc(s) {
       const d = document.createElement('div');
       d.textContent = String(s ?? '');
@@ -645,7 +658,7 @@
               duration: data.duration,
               uploader: data.uploader || '',
               formats: data.formats || [],
-              selectedFormatId: data.formats?.[0]?.id || null,
+              selectedHeight: null,
             };
           }
         } catch (err) {
@@ -716,16 +729,24 @@
         thumbHtml = `<div class="no-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><circle cx="8" cy="8" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>`;
       }
 
-      let qualityChips = '';
-      if (!isAudio && c.formats && c.formats.length > 1) {
-        qualityChips = c.formats.map(f =>
-          `<button class="q-chip${f.id === c.selectedFormatId ? ' active' : ''}" data-format-id="${escAttr(f.id)}" onclick="pickFormat(${idx}, this.dataset.formatId)">${esc(f.label)}</button>`
-        ).join('');
+      let qualitySelect = '';
+      if (!isAudio) {
+        const formats = c.formats || [];
+        const maxSelected = (c.selectedHeight === null || c.selectedHeight === undefined) ? ' selected' : '';
+        const opts = [`<option value=""${maxSelected}>Maximum available</option>`];
+        for (const f of formats) {
+          const sizeStr = formatSize(f.filesize);
+          const text = sizeStr ? `${f.label} — ${sizeStr}` : f.label;
+          const sel = c.selectedHeight === f.height ? ' selected' : '';
+          opts.push(`<option value="${f.height}"${sel}>${esc(text)}</option>`);
+        }
+        const disabled = formats.length <= 1 ? ' disabled' : '';
+        qualitySelect = `<select class="quality-select"${disabled} onchange="pickQuality(${idx}, this.value)">${opts.join('')}</select>`;
       }
 
       let actionHtml = '';
       if (c.status === 'ready') {
-        actionHtml = `<button class="card-dl-btn" onclick="dlCard(${idx})">Download</button>${qualityChips}`;
+        actionHtml = `<button class="card-dl-btn" onclick="dlCard(${idx})">Download</button>${qualitySelect}`;
       } else if (c.status === 'downloading') {
         const progress = Math.max(0, Math.min(100, c.progress || 0));
         actionHtml = `
@@ -768,8 +789,8 @@
       document.getElementById('cards').appendChild(bar);
     }
 
-    function pickFormat(idx, formatId) {
-      cardData[idx].selectedFormatId = formatId;
+    function pickQuality(idx, value) {
+      cardData[idx].selectedHeight = value === '' ? null : Number(value);
       renderCard(idx);
     }
 
@@ -788,7 +809,7 @@
           body: JSON.stringify({
             url: c.url,
             format: currentFormat,
-            format_id: c.selectedFormatId,
+            max_height: c.selectedHeight ?? null,
             title: c.title || '',
           }),
         });
