@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 from flask import Flask, request, jsonify, send_file, render_template
 from yt_dlp import YoutubeDL
 from job_manager import DownloadCancelled, JobManager
+from presets import CONVERSION_PRESETS, get_preset, is_no_op
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -135,6 +136,131 @@ def _ffmpeg_location():
     return os.path.dirname(ffmpeg) if ffmpeg else None
 
 
+def _ffmpeg_binary():
+    bundled = os.path.join(BUNDLED_BIN_DIR, "ffmpeg")
+    if os.path.isfile(bundled):
+        return bundled
+    return shutil.which("ffmpeg")
+
+
+def _ffprobe_binary():
+    bundled = os.path.join(BUNDLED_BIN_DIR, "ffprobe")
+    if os.path.isfile(bundled):
+        return bundled
+    return shutil.which("ffprobe")
+
+
+def _ffprobe_duration(path):
+    """Return the media duration in seconds, or None if unknown."""
+    binary = _ffprobe_binary()
+    if not binary:
+        return None
+    try:
+        result = subprocess.run(
+            [
+                binary, "-v", "error",
+                "-show_entries", "format=duration",
+                "-of", "default=nw=1:nk=1",
+                path,
+            ],
+            capture_output=True, text=True, timeout=10,
+        )
+        out = result.stdout.strip()
+        return float(out) if out else None
+    except (ValueError, subprocess.SubprocessError, OSError):
+        return None
+
+
+def _run_ffmpeg_convert(job_id, source_path, output_path, preset_args, popen=None):
+    """Run ffmpeg to convert source_path → output_path, streaming progress to JobManager.
+
+    Returns (ok, error_message). ok=True on a clean exit; ok=False on cancellation
+    or non-zero ffmpeg exit. Caller is responsible for cleanup of the partial output.
+    """
+    binary = _ffmpeg_binary()
+    if not binary:
+        return False, "ffmpeg not found"
+
+    duration = _ffprobe_duration(source_path)
+
+    cmd = [
+        binary, "-y",
+        "-i", source_path,
+        *preset_args,
+        "-progress", "pipe:1",
+        "-nostats",
+        "-loglevel", "error",
+        output_path,
+    ]
+
+    proc = (popen or subprocess.Popen)(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        bufsize=1,
+    )
+
+    cancelled = False
+    try:
+        for line in proc.stdout or ():
+            if jobs.is_cancelled(job_id):
+                cancelled = True
+                break
+
+            secs = _parse_ffmpeg_progress_line(line)
+            if secs is not None and duration:
+                pct = max(0, min(99, int(secs / duration * 100)))
+                try:
+                    jobs.update_progress(job_id, {
+                        "progress": pct,
+                        "speed": None,
+                        "eta": None,
+                    })
+                except DownloadCancelled:
+                    cancelled = True
+                    break
+
+        if cancelled:
+            try:
+                proc.terminate()
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+            except Exception:
+                pass
+            return False, "cancelled"
+
+        proc.wait()
+        if proc.returncode != 0:
+            err = (proc.stderr.read() if proc.stderr else "").strip()
+            return False, err or f"ffmpeg exited with code {proc.returncode}"
+        return True, None
+    finally:
+        for stream in (proc.stdout, proc.stderr):
+            try:
+                if stream:
+                    stream.close()
+            except Exception:
+                pass
+
+
+def _parse_ffmpeg_progress_line(line):
+    """Parse `out_time_us=...` lines emitted by `ffmpeg -progress pipe:1`.
+
+    Returns the elapsed seconds, or None for any other line.
+    """
+    if not line:
+        return None
+    line = line.strip()
+    if not line.startswith("out_time_us="):
+        return None
+    try:
+        return int(line.split("=", 1)[1]) / 1_000_000
+    except (ValueError, IndexError):
+        return None
+
+
 def _yt_dlp_options(**extra):
     opts = {
         "noplaylist": True,
@@ -244,7 +370,7 @@ def _progress_hook(job_id):
     return hook
 
 
-def run_download(job_id, url, format_choice, max_height):
+def run_download(job_id, url, format_choice, max_height, convert_preset="none", keep_original=False):
     os.makedirs(DOWNLOAD_DIR, exist_ok=True)
     os.makedirs(TEMP_DOWNLOAD_DIR, exist_ok=True)
     out_template = os.path.join(TEMP_DOWNLOAD_DIR, f"{job_id}.%(ext)s")
@@ -259,6 +385,8 @@ def run_download(job_id, url, format_choice, max_height):
                 "preferredcodec": "mp3",
             }],
         )
+        # Conversion presets are video-only.
+        convert_preset = "none"
     else:
         ydl_opts = _yt_dlp_options(
             outtmpl=out_template,
@@ -288,7 +416,14 @@ def run_download(job_id, url, format_choice, max_height):
             chosen = target[0] if target else files[0]
 
         job = jobs.snapshot(job_id) or {}
-        final_name = _format_filename(job.get("title", ""), chosen)
+        title = job.get("title", "")
+
+        preset = get_preset(convert_preset)
+        if not is_no_op(preset):
+            _run_convert_step(job_id, chosen, title, preset, keep_original)
+            return
+
+        final_name = _format_filename(title, chosen)
         final_path, final_name = _unique_destination(final_name)
         shutil.move(chosen, final_path)
         _cleanup_job_files(job_id)
@@ -302,6 +437,78 @@ def run_download(job_id, url, format_choice, max_height):
         _cleanup_job_files(job_id)
     except Exception as e:
         jobs.mark_error(job_id, str(e))
+
+
+def _run_convert_step(job_id, source_path, title, preset, keep_original):
+    """Convert `source_path` with `preset`, finalize destination, update job state.
+
+    Decisions on failure:
+      - cancelled mid-convert → cleanup partials, leave job in 'cancelled' state
+      - ffmpeg non-zero exit → preserve the original download in DOWNLOAD_DIR,
+        cleanup the partial converted output, transition job to 'error' with
+        the ffmpeg stderr summary
+    """
+    if not jobs.mark_converting(job_id):
+        # Already cancelled or torn down between download and convert.
+        _cleanup_job_files(job_id)
+        return
+
+    convert_output = os.path.join(
+        TEMP_DOWNLOAD_DIR, f"{job_id}.converted.{preset['ext']}"
+    )
+
+    ok, err = _run_ffmpeg_convert(job_id, source_path, convert_output, preset["args"])
+
+    if jobs.is_cancelled(job_id):
+        for path in (source_path, convert_output):
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+        _cleanup_job_files(job_id)
+        return
+
+    if not ok:
+        # Convert failed: preserve the original so the user doesn't lose the download.
+        try:
+            os.remove(convert_output)
+        except OSError:
+            pass
+        rescued_name = _format_filename(title, source_path)
+        rescued_dest, _ = _unique_destination(rescued_name)
+        try:
+            shutil.move(source_path, rescued_dest)
+        except OSError:
+            pass
+        _cleanup_job_files(job_id)
+        jobs.mark_error(job_id, f"Conversion failed: {err}" if err else "Conversion failed")
+        return
+
+    # Convert succeeded.
+    converted_name_base = _format_filename(title, f"x.{preset['ext']}")
+    converted_dest, converted_name = _unique_destination(converted_name_base)
+    shutil.move(convert_output, converted_dest)
+
+    if keep_original:
+        original_name_base = _format_filename(title, source_path)
+        original_dest, _ = _unique_destination(original_name_base)
+        try:
+            shutil.move(source_path, original_dest)
+        except OSError:
+            pass
+    else:
+        try:
+            os.remove(source_path)
+        except OSError:
+            pass
+
+    _cleanup_job_files(job_id)
+
+    if not jobs.mark_done(job_id, converted_dest, converted_name):
+        try:
+            os.remove(converted_dest)
+        except OSError:
+            pass
 
 
 @app.route("/")
@@ -406,6 +613,16 @@ def get_info():
         return jsonify({"error": str(e)}), 400
 
 
+@app.route("/api/presets")
+def list_presets():
+    return jsonify({
+        "presets": [
+            {"id": p["id"], "label": p["label"], "ext": p["ext"]}
+            for p in CONVERSION_PRESETS
+        ]
+    })
+
+
 @app.route("/api/download", methods=["POST"])
 def start_download():
     _clean_old_jobs()
@@ -414,6 +631,8 @@ def start_download():
     format_choice = _string_field(data, "format", "video")
     max_height = data.get("max_height")
     title = data.get("title", "")
+    convert_preset = _string_field(data, "convert_preset", "none") or "none"
+    keep_original = bool(data.get("keep_original", False))
 
     if not url:
         return jsonify({"error": "No URL provided"}), 400
@@ -428,12 +647,19 @@ def start_download():
             or max_height <= 0
         ):
             return jsonify({"error": "max_height must be a positive integer or null"}), 400
+    try:
+        get_preset(convert_preset)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
     if not isinstance(title, str):
         title = ""
 
     job_id = jobs.create(url, title)
 
-    thread = threading.Thread(target=run_download, args=(job_id, url, format_choice, max_height))
+    thread = threading.Thread(
+        target=run_download,
+        args=(job_id, url, format_choice, max_height, convert_preset, keep_original),
+    )
     thread.daemon = True
     thread.start()
 
