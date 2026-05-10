@@ -149,6 +149,44 @@ def _yt_dlp_options(**extra):
     return opts
 
 
+HEIGHT_LABELS = {
+    4320: "8K (4320p)",
+    2160: "4K (2160p)",
+    1440: "2K (1440p)",
+    1080: "Full HD (1080p)",
+    720:  "HD (720p)",
+    480:  "SD (480p)",
+    360:  "360p",
+    240:  "240p",
+    144:  "144p",
+}
+
+
+def format_height(height):
+    """Friendly label for a video height (e.g. 2160 → '4K (2160p)').
+
+    Unknown heights fall back to '{height}p' so non-standard sources
+    (3072, 6K, 16K, irregular) still render usefully.
+    """
+    return HEIGHT_LABELS.get(height, f"{height}p")
+
+
+def build_format_string(max_height):
+    """Build a yt-dlp format selector string capped at the given height.
+
+    None → 'bv*+ba/b' (best available video + best audio, fallback to best combined).
+    Positive int → 'bv*[height<=N]+ba/b[height<=N]'.
+    Raises ValueError for non-positive or non-integer input.
+    """
+    if max_height is None:
+        return "bv*+ba/b"
+    if not isinstance(max_height, int) or max_height <= 0:
+        raise ValueError(
+            f"max_height must be a positive integer or None, got {max_height!r}"
+        )
+    return f"bv*[height<={max_height}]+ba/b[height<={max_height}]"
+
+
 def _format_filename(title, chosen):
     ext = os.path.splitext(chosen)[1]
     title = title.strip()
@@ -206,7 +244,7 @@ def _progress_hook(job_id):
     return hook
 
 
-def run_download(job_id, url, format_choice, format_id):
+def run_download(job_id, url, format_choice, max_height):
     os.makedirs(DOWNLOAD_DIR, exist_ok=True)
     os.makedirs(TEMP_DOWNLOAD_DIR, exist_ok=True)
     out_template = os.path.join(TEMP_DOWNLOAD_DIR, f"{job_id}.%(ext)s")
@@ -221,17 +259,10 @@ def run_download(job_id, url, format_choice, format_id):
                 "preferredcodec": "mp3",
             }],
         )
-    elif format_id:
-        ydl_opts = _yt_dlp_options(
-            outtmpl=out_template,
-            format=f"{format_id}+bestaudio/best",
-            merge_output_format="mp4",
-            progress_hooks=[_progress_hook(job_id)],
-        )
     else:
         ydl_opts = _yt_dlp_options(
             outtmpl=out_template,
-            format="bestvideo+bestaudio/best",
+            format=build_format_string(max_height),
             merge_output_format="mp4",
             progress_hooks=[_progress_hook(job_id)],
         )
@@ -343,23 +374,26 @@ def get_info():
         with YoutubeDL(_yt_dlp_options(skip_download=True)) as ydl:
             info = ydl.extract_info(url, download=False)
 
-        # Build quality options — keep best format per resolution
-        best_by_height = {}
+        # Group video formats by height; per height the size estimate is the max of
+        # filesize/filesize_approx across all formats at that height. Heights with no
+        # size info still appear (filesize=None) so the dropdown stays complete.
+        sizes_by_height = {}
         for f in info.get("formats", []):
             height = f.get("height")
-            if height and f.get("vcodec", "none") != "none":
-                tbr = f.get("tbr") or 0
-                if height not in best_by_height or tbr > (best_by_height[height].get("tbr") or 0):
-                    best_by_height[height] = f
+            if not height or f.get("vcodec", "none") == "none":
+                continue
+            size = f.get("filesize") or f.get("filesize_approx")
+            if size is not None:
+                current = sizes_by_height.get(height)
+                if current is None or size > current:
+                    sizes_by_height[height] = size
+            else:
+                sizes_by_height.setdefault(height, None)
 
-        formats = []
-        for height, f in best_by_height.items():
-            formats.append({
-                "id": f["format_id"],
-                "label": f"{height}p",
-                "height": height,
-            })
-        formats.sort(key=lambda x: x["height"], reverse=True)
+        formats = [
+            {"height": h, "label": format_height(h), "filesize": sizes_by_height[h]}
+            for h in sorted(sizes_by_height.keys(), reverse=True)
+        ]
 
         return jsonify({
             "title": info.get("title", ""),
@@ -378,7 +412,7 @@ def start_download():
     data = _request_data()
     url = _string_field(data, "url")
     format_choice = _string_field(data, "format", "video")
-    format_id = data.get("format_id")
+    max_height = data.get("max_height")
     title = data.get("title", "")
 
     if not url:
@@ -387,14 +421,19 @@ def start_download():
         return jsonify({"error": "Only http(s) URLs are supported"}), 400
     if format_choice not in {"video", "audio"}:
         return jsonify({"error": "Format must be video or audio"}), 400
-    if format_id is not None and not isinstance(format_id, str):
-        return jsonify({"error": "format_id must be a string"}), 400
+    if max_height is not None:
+        if (
+            not isinstance(max_height, int)
+            or isinstance(max_height, bool)
+            or max_height <= 0
+        ):
+            return jsonify({"error": "max_height must be a positive integer or null"}), 400
     if not isinstance(title, str):
         title = ""
 
     job_id = jobs.create(url, title)
 
-    thread = threading.Thread(target=run_download, args=(job_id, url, format_choice, format_id))
+    thread = threading.Thread(target=run_download, args=(job_id, url, format_choice, max_height))
     thread.daemon = True
     thread.start()
 
