@@ -8,6 +8,7 @@ class DownloadCancelled(Exception):
 
 
 TERMINAL_STATUSES = {"done", "error", "cancelled"}
+ACTIVE_STATUSES = {"downloading", "converting"}
 
 
 class JobManager:
@@ -53,17 +54,35 @@ class JobManager:
     def update_progress(self, job_id, progress):
         with self._lock:
             job = self._jobs.get(job_id)
-            if not job or job["cancelled"] or job["status"] != "downloading":
+            if not job or job["cancelled"] or job["status"] not in ACTIVE_STATUSES:
                 raise DownloadCancelled()
             job.update(progress)
             self._touch(job)
+
+    def mark_converting(self, job_id):
+        """Transition a job from downloading → converting.
+
+        Returns True on success; False when the job is missing, cancelled,
+        or already in a different state (caller should bail out without
+        kicking off ffmpeg).
+        """
+        with self._lock:
+            job = self._jobs.get(job_id)
+            if not job or job["cancelled"] or job["status"] != "downloading":
+                return False
+            job["status"] = "converting"
+            job["progress"] = 0
+            job["speed"] = None
+            job["eta"] = None
+            self._touch(job)
+            return True
 
     def mark_done(self, job_id, file_path, filename):
         with self._lock:
             job = self._jobs.get(job_id)
             if not job:
                 return False
-            if job["cancelled"] or job["status"] != "downloading":
+            if job["cancelled"] or job["status"] not in ACTIVE_STATUSES:
                 job["status"] = "cancelled"
                 self._touch(job)
                 return False
@@ -94,7 +113,7 @@ class JobManager:
             job = self._jobs.get(job_id)
             if not job:
                 return None
-            if job["status"] == "downloading":
+            if job["status"] in ACTIVE_STATUSES:
                 job["cancelled"] = True
                 job["status"] = "cancelled"
                 self._touch(job)

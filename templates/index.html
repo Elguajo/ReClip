@@ -152,7 +152,50 @@
       gap: 10px;
       margin-bottom: 6px;
       align-items: center;
+      flex-wrap: wrap;
     }
+    .convert-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin: 8px 0 14px;
+      font-size: 0.7rem;
+      color: var(--muted);
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+    .convert-select {
+      padding: 7px 28px 7px 10px;
+      border: 1.5px solid var(--card-border);
+      border-radius: 8px;
+      background-color: var(--card);
+      color: var(--fg);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      cursor: pointer;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'><path fill='none' stroke='%239c9889' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M1 1.5l5 5 5-5'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 9px center;
+      background-size: 8px;
+      transition: border-color 0.2s;
+    }
+    .convert-select:hover:not(:disabled) { border-color: var(--muted); }
+    .convert-select:focus { outline: none; border-color: var(--accent); }
+    .convert-select:disabled { cursor: not-allowed; opacity: 0.5; }
+    .keep-original {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .keep-original input { cursor: pointer; }
+    .keep-original.disabled { opacity: 0.5; cursor: not-allowed; }
+    .card-status.converting { color: var(--accent); }
     .pill-group {
       display: flex;
       border: 1.5px solid var(--card-border);
@@ -505,6 +548,14 @@
       <button class="fetch-btn" id="goBtn" onclick="go()">Fetch</button>
     </div>
 
+    <div class="convert-row" id="convertRow">
+      <span>Convert</span>
+      <select id="convertPreset" class="convert-select" onchange="onConvertChange()"></select>
+      <label class="keep-original" id="keepOriginalLabel">
+        <input type="checkbox" id="keepOriginal"> Keep original
+      </label>
+    </div>
+
     <div id="cards" class="cards"></div>
 
     <div class="footer">
@@ -518,6 +569,7 @@
     let currentFormat = 'video';
     let cardData = [];
     let downloadDir = '';
+    let convertPresets = [{ id: 'none', label: 'No conversion (keep original)', ext: null }];
 
     function initTheme() {
       const saved = localStorage.getItem('reclip-theme');
@@ -546,6 +598,47 @@
       }
     }
 
+    async function loadPresets() {
+      const sel = document.getElementById('convertPreset');
+      try {
+        const res = await fetch('/api/presets');
+        const data = await res.json();
+        if (Array.isArray(data.presets) && data.presets.length) {
+          convertPresets = data.presets;
+        }
+      } catch {
+        // keep the fallback `none` preset
+      }
+      sel.innerHTML = convertPresets
+        .map(p => `<option value="${esc(p.id)}">${esc(p.label)}</option>`)
+        .join('');
+      sel.value = 'none';
+      updateConvertControls();
+    }
+
+    function selectedPresetId() {
+      return document.getElementById('convertPreset').value || 'none';
+    }
+
+    function isConvertActive() {
+      return currentFormat === 'video' && selectedPresetId() !== 'none';
+    }
+
+    function updateConvertControls() {
+      const sel = document.getElementById('convertPreset');
+      const keepLabel = document.getElementById('keepOriginalLabel');
+      const keepInput = document.getElementById('keepOriginal');
+      const audio = currentFormat === 'audio';
+      sel.disabled = audio;
+      const keepDisabled = audio || !isConvertActive();
+      keepInput.disabled = keepDisabled;
+      keepLabel.classList.toggle('disabled', keepDisabled);
+    }
+
+    function onConvertChange() {
+      updateConvertControls();
+    }
+
     async function selectFolder() {
       const res = await fetch('/api/select-folder', { method: 'POST' });
       const data = await res.json();
@@ -559,6 +652,7 @@
       document.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentFormat = btn.dataset.format;
+      updateConvertControls();
     }
 
     function parseUrls(text) {
@@ -747,14 +841,18 @@
       let actionHtml = '';
       if (c.status === 'ready') {
         actionHtml = `<button class="card-dl-btn" onclick="dlCard(${idx})">Download</button>${qualitySelect}`;
-      } else if (c.status === 'downloading') {
+      } else if (c.status === 'downloading' || c.status === 'converting') {
         const progress = Math.max(0, Math.min(100, c.progress || 0));
+        const isConverting = c.status === 'converting';
+        const label = isConverting ? 'Converting' : 'Downloading';
+        const cls = isConverting ? 'converting' : 'downloading';
+        const etaPart = isConverting ? '' : fmtEta(c.eta);
         actionHtml = `
           <div class="progress-wrap">
             <div class="progress-track"><div class="progress-fill" style="width:${progress}%"></div></div>
             <span class="progress-text">${progress}%</span>
           </div>
-          <span class="card-status downloading"><span class="spin"></span> Downloading${fmtEta(c.eta)}</span>
+          <span class="card-status ${cls}"><span class="spin"></span> ${label}${etaPart}</span>
           <button class="card-dl-btn cancel" onclick="cancelCard(${idx})">Cancel</button>`;
       } else if (c.status === 'done') {
         actionHtml = `<button class="card-dl-btn done" onclick="revealCard(${idx})">Show</button>
@@ -811,6 +909,8 @@
             format: currentFormat,
             max_height: c.selectedHeight ?? null,
             title: c.title || '',
+            convert_preset: currentFormat === 'video' ? selectedPresetId() : 'none',
+            keep_original: currentFormat === 'video' && isConvertActive() && document.getElementById('keepOriginal').checked,
           }),
         });
         const data = await res.json();
@@ -855,6 +955,7 @@
             c.error = data.error;
             renderCard(idx);
           } else {
+            c.status = data.status === 'converting' ? 'converting' : 'downloading';
             c.progress = data.progress || 0;
             c.eta = data.eta || null;
             renderCard(idx);
@@ -911,6 +1012,7 @@
 
     initTheme();
     loadConfig();
+    loadPresets();
   </script>
 </body>
 </html>
