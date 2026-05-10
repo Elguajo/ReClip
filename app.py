@@ -1,6 +1,7 @@
 import os
 import glob
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -261,7 +262,24 @@ def _parse_ffmpeg_progress_line(line):
         return None
 
 
-def _yt_dlp_options(**extra):
+_KNOWN_BROWSERS = {"safari", "chrome", "chromium", "firefox", "edge", "brave", "opera", "vivaldi"}
+_FRAGMENT_RE = re.compile(r"\.f\d+\.")
+
+
+def _browser_candidates():
+    # RECLIP_YT_BROWSER: 'none' disables cookies; a browser name pins to that one;
+    # unset uses platform defaults with no-cookies as final fallback.
+    override = os.environ.get("RECLIP_YT_BROWSER", "").strip().lower()
+    if override == "none":
+        return [None]
+    if override in _KNOWN_BROWSERS:
+        return [override]
+    if sys.platform == "darwin":
+        return ["safari", "chrome", "firefox", None]
+    return ["chrome", "firefox", None]
+
+
+def _yt_dlp_options(_browser=None, **extra):
     opts = {
         "noplaylist": True,
         "quiet": True,
@@ -271,8 +289,26 @@ def _yt_dlp_options(**extra):
     ffmpeg_dir = _ffmpeg_location()
     if ffmpeg_dir:
         opts["ffmpeg_location"] = ffmpeg_dir
+    if _browser:
+        opts["cookiesfrombrowser"] = (_browser,)
     opts.update(extra)
     return opts
+
+
+def _yt_dlp_run(action, **opts_extra):
+    # Try each browser in _browser_candidates(); on any failure, fall through
+    # to the next. DownloadCancelled bypasses the retry loop.
+    last_exc = None
+    for browser in _browser_candidates():
+        opts = _yt_dlp_options(_browser=browser, **opts_extra)
+        try:
+            with YoutubeDL(opts) as ydl:
+                return action(ydl)
+        except DownloadCancelled:
+            raise
+        except Exception as exc:
+            last_exc = exc
+    raise last_exc
 
 
 HEIGHT_LABELS = {
@@ -376,7 +412,7 @@ def run_download(job_id, url, format_choice, max_height, convert_preset="none", 
     out_template = os.path.join(TEMP_DOWNLOAD_DIR, f"{job_id}.%(ext)s")
 
     if format_choice == "audio":
-        ydl_opts = _yt_dlp_options(
+        opts_extra = dict(
             outtmpl=out_template,
             format="bestaudio/best",
             progress_hooks=[_progress_hook(job_id)],
@@ -388,16 +424,14 @@ def run_download(job_id, url, format_choice, max_height, convert_preset="none", 
         # Conversion presets are video-only.
         convert_preset = "none"
     else:
-        ydl_opts = _yt_dlp_options(
+        opts_extra = dict(
             outtmpl=out_template,
             format=build_format_string(max_height),
-            merge_output_format="mp4",
             progress_hooks=[_progress_hook(job_id)],
         )
 
     try:
-        with YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
+        _yt_dlp_run(lambda ydl: ydl.download([url]), **opts_extra)
 
         if jobs.is_cancelled(job_id):
             _cleanup_job_files(job_id)
@@ -412,8 +446,10 @@ def run_download(job_id, url, format_choice, max_height, convert_preset="none", 
             target = [f for f in files if f.endswith(".mp3")]
             chosen = target[0] if target else files[0]
         else:
-            target = [f for f in files if f.endswith(".mp4")]
-            chosen = target[0] if target else files[0]
+            # Skip yt-dlp's per-stream fragment files ({job_id}.fNNN.ext) so we pick
+            # the merged output regardless of container (mp4/webm/mkv).
+            non_fragment = [f for f in files if not _FRAGMENT_RE.search(os.path.basename(f))]
+            chosen = non_fragment[0] if non_fragment else files[0]
 
         job = jobs.snapshot(job_id) or {}
         title = job.get("title", "")
@@ -578,8 +614,7 @@ def get_info():
         return jsonify({"error": "Only http(s) URLs are supported"}), 400
 
     try:
-        with YoutubeDL(_yt_dlp_options(skip_download=True)) as ydl:
-            info = ydl.extract_info(url, download=False)
+        info = _yt_dlp_run(lambda ydl: ydl.extract_info(url, download=False), skip_download=True)
 
         # Group video formats by height; per height the size estimate is the max of
         # filesize/filesize_approx across all formats at that height. Heights with no

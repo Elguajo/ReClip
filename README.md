@@ -107,6 +107,16 @@ docker build -t reclip . && docker run -p 8899:8899 reclip
 6. Click **Download** on individual videos, or **Download All**
 7. Click **Show** to reveal the saved file in Finder, or use **Save As** for a browser download copy
 
+## YouTube bot-checks
+
+YouTube increasingly gates extraction behind a "Sign in to confirm you're not a bot" challenge. ReClip works around this by reading cookies from a browser where you're already logged in. By default it tries **Safari → Chrome → Firefox** per request, falling back to no cookies if all three fail.
+
+To make this work:
+
+- Be signed in to YouTube in at least one of those browsers.
+- On macOS, Safari cookies require **Full Disk Access** for the process reading them (System Settings → Privacy & Security → Full Disk Access → add Terminal, or the ReClip app for the bundled build). Chrome/Firefox should be running with the profile that has the YouTube session; on first read, Chrome may show a Keychain prompt.
+- Override with the `RECLIP_YT_BROWSER` env var: a specific browser name (`safari`, `chrome`, `firefox`, `edge`, `brave`, `chromium`, `opera`, `vivaldi`) pins to that one with no fallback; `none` disables the cookie lookup entirely.
+
 ## Supported Sites
 
 Anything [yt-dlp supports](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md), including:
