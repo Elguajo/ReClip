@@ -7,7 +7,7 @@ import subprocess
 import sys
 import threading
 from urllib.parse import urlparse
-from flask import Flask, request, jsonify, send_file, render_template
+from flask import Flask, request, jsonify, send_file, render_template, make_response
 from yt_dlp import YoutubeDL
 from job_manager import DownloadCancelled, JobManager
 from presets import CONVERSION_PRESETS, get_preset, is_no_op
@@ -549,7 +549,12 @@ def _run_convert_step(job_id, source_path, title, preset, keep_original):
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    # no-store on the shell prevents WKWebView (and browsers) from serving a
+    # stale UI after the app/template is updated — the rest is JSON APIs
+    # that aren't cached anyway.
+    resp = make_response(render_template("index.html"))
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
 
 
 @app.route("/api/config")

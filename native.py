@@ -34,7 +34,7 @@ from AppKit import (
     NSObject,
 )
 from Foundation import NSPoint, NSRect, NSSize, NSTimer, NSURL, NSURLRequest
-from WebKit import WKWebView, WKWebViewConfiguration
+from WebKit import WKWebView, WKWebViewConfiguration, WKWebsiteDataStore
 
 
 SPLASH_HTML = """
@@ -132,6 +132,9 @@ class AppDelegate(NSObject):
         self.window.setTitleVisibility_(1)
 
         config = WKWebViewConfiguration.alloc().init()
+        # Ephemeral store: HTML/JS/cookies don't persist across launches, so a
+        # rebuilt app never serves stale UI from WebKit's on-disk cache.
+        config.setWebsiteDataStore_(WKWebsiteDataStore.nonPersistentDataStore())
         config.preferences().setValue_forKey_(True, "developerExtrasEnabled")
 
         self.webview = WKWebView.alloc().initWithFrame_configuration_(

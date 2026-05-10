@@ -25,6 +25,17 @@ def make_client(tmp_path, monkeypatch):
     return reclip_app.app.test_client()
 
 
+def test_index_sends_no_store_header(tmp_path, monkeypatch):
+    # WKWebView/browsers must not cache the shell across rebuilds — otherwise
+    # a freshly-built .app can serve a stale UI from WebKit's disk cache.
+    client = make_client(tmp_path, monkeypatch)
+
+    res = client.get("/")
+
+    assert res.status_code == 200
+    assert "no-store" in res.headers.get("Cache-Control", "")
+
+
 def test_info_rejects_invalid_json(tmp_path, monkeypatch):
     client = make_client(tmp_path, monkeypatch)
 
