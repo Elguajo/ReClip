@@ -88,8 +88,13 @@ brew install python3 ffmpeg
 open dist/ReClip.app
 ```
 
-The standalone build bundles Python dependencies and the local `ffmpeg` binary.
-It is not codesigned or notarized.
+The standalone build bundles Python dependencies, the local `ffmpeg`
+binary, a portable Node.js 22 runtime, and the
+[bgutil POT provider](https://github.com/Brainicism/bgutil-ytdlp-pot-provider)
+JS server (see *YouTube bot-checks* below). The first build downloads Node
+and clones bgutil into `.build-cache/`; subsequent builds reuse the cache
+and finish in ~30s. The resulting bundle is ~220MB and is ad-hoc signed,
+not notarized.
 
 ### Run with Docker
 
@@ -109,13 +114,16 @@ docker build -t reclip . && docker run -p 8899:8899 reclip
 
 ## YouTube bot-checks
 
-YouTube increasingly gates extraction behind a "Sign in to confirm you're not a bot" challenge. ReClip works around this by reading cookies from a browser where you're already logged in. By default it tries **Safari → Chrome → Firefox** per request, falling back to no cookies if all three fail.
+YouTube increasingly gates extraction behind a "Sign in to confirm you're not a bot" challenge. ReClip handles this in two ways:
 
-To make this work:
+**Bundled macOS app** ships with [bgutil POT provider](https://github.com/Brainicism/bgutil-ytdlp-pot-provider) running in script mode against a bundled Node.js runtime. Each extraction mints a Proof-of-Origin token that satisfies the bot check without needing browser cookies or a YouTube login. The first call after launch is slow (~60–90s) while the token is generated; subsequent calls reuse the cached token (TTL 6h, stored in `~/.cache/bgutil-ytdlp-pot-provider/`).
+
+**Source / local installs** without the POT bundle fall back to reading cookies from a browser where you're already logged in. By default ReClip tries **Safari → Chrome → Firefox** per request, falling back to no cookies if all three fail. To make this work:
 
 - Be signed in to YouTube in at least one of those browsers.
-- On macOS, Safari cookies require **Full Disk Access** for the process reading them (System Settings → Privacy & Security → Full Disk Access → add Terminal, or the ReClip app for the bundled build). Chrome/Firefox should be running with the profile that has the YouTube session; on first read, Chrome may show a Keychain prompt.
-- Override with the `RECLIP_YT_BROWSER` env var: a specific browser name (`safari`, `chrome`, `firefox`, `edge`, `brave`, `chromium`, `opera`, `vivaldi`) pins to that one with no fallback; `none` disables the cookie lookup entirely.
+- On macOS, Safari cookies require **Full Disk Access** for the process reading them (System Settings → Privacy & Security → Full Disk Access → add Terminal). Chrome/Firefox should be running with the profile that has the YouTube session; on first read, Chrome may show a Keychain prompt.
+
+Override either path with `RECLIP_YT_BROWSER`: a specific browser name (`safari`, `chrome`, `firefox`, `edge`, `brave`, `chromium`, `opera`, `vivaldi`) pins to that one with no fallback; `none` disables the cookie lookup entirely (recommended when running the bundled `.app`, since the POT provider already handles the bot check).
 
 ## Supported Sites
 
@@ -129,7 +137,8 @@ YouTube, TikTok, Instagram, Twitter/X, Reddit, Facebook, Vimeo, Twitch, Dailymot
 - **Frontend:** Vanilla HTML/CSS/JS (single file, no build step)
 - **Native macOS wrapper:** PyObjC + WKWebView
 - **Download engine:** [yt-dlp](https://github.com/yt-dlp/yt-dlp) + [ffmpeg](https://ffmpeg.org/)
-- **Dependencies:** Flask, yt-dlp, certifi, and macOS-only PyObjC packages
+- **YouTube bot-check bypass (bundled `.app` only):** [bgutil-ytdlp-pot-provider](https://github.com/Brainicism/bgutil-ytdlp-pot-provider) + [yt-dlp-ejs](https://github.com/yt-dlp/yt-dlp-ejs) running on a bundled Node.js 22 runtime
+- **Dependencies:** Flask, yt-dlp, yt-dlp-ejs, bgutil-ytdlp-pot-provider, certifi, and macOS-only PyObjC packages
 - **Tests:** pytest
 
 ## Tests
