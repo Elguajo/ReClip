@@ -154,25 +154,14 @@
       align-items: center;
       flex-wrap: wrap;
     }
-    .convert-row {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      flex-wrap: wrap;
-      margin: 8px 0 14px;
-      font-size: 0.7rem;
-      color: var(--muted);
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-    }
     .convert-select {
-      padding: 7px 28px 7px 10px;
+      padding: 5px 26px 5px 10px;
       border: 1.5px solid var(--card-border);
-      border-radius: 8px;
+      border-radius: 6px;
       background-color: var(--card);
       color: var(--fg);
       font-family: 'DM Mono', monospace;
-      font-size: 0.7rem;
+      font-size: 0.65rem;
       cursor: pointer;
       -webkit-appearance: none;
       -moz-appearance: none;
@@ -189,12 +178,15 @@
     .keep-original {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       cursor: pointer;
       user-select: none;
+      font-size: 0.62rem;
+      color: var(--muted);
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
     }
-    .keep-original input { cursor: pointer; }
-    .keep-original.disabled { opacity: 0.5; cursor: not-allowed; }
+    .keep-original input { cursor: pointer; margin: 0; }
     .card-status.converting { color: var(--accent); }
     .pill-group {
       display: flex;
@@ -548,14 +540,6 @@
       <button class="fetch-btn" id="goBtn" onclick="go()">Fetch</button>
     </div>
 
-    <div class="convert-row" id="convertRow">
-      <span>Convert</span>
-      <select id="convertPreset" class="convert-select" onchange="onConvertChange()"></select>
-      <label class="keep-original" id="keepOriginalLabel">
-        <input type="checkbox" id="keepOriginal"> Keep original
-      </label>
-    </div>
-
     <div id="cards" class="cards"></div>
 
     <div class="footer">
@@ -599,7 +583,6 @@
     }
 
     async function loadPresets() {
-      const sel = document.getElementById('convertPreset');
       try {
         const res = await fetch('/api/presets');
         const data = await res.json();
@@ -609,34 +592,6 @@
       } catch {
         // keep the fallback `none` preset
       }
-      sel.innerHTML = convertPresets
-        .map(p => `<option value="${esc(p.id)}">${esc(p.label)}</option>`)
-        .join('');
-      sel.value = 'none';
-      updateConvertControls();
-    }
-
-    function selectedPresetId() {
-      return document.getElementById('convertPreset').value || 'none';
-    }
-
-    function isConvertActive() {
-      return currentFormat === 'video' && selectedPresetId() !== 'none';
-    }
-
-    function updateConvertControls() {
-      const sel = document.getElementById('convertPreset');
-      const keepLabel = document.getElementById('keepOriginalLabel');
-      const keepInput = document.getElementById('keepOriginal');
-      const audio = currentFormat === 'audio';
-      sel.disabled = audio;
-      const keepDisabled = audio || !isConvertActive();
-      keepInput.disabled = keepDisabled;
-      keepLabel.classList.toggle('disabled', keepDisabled);
-    }
-
-    function onConvertChange() {
-      updateConvertControls();
     }
 
     async function selectFolder() {
@@ -652,7 +607,7 @@
       document.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentFormat = btn.dataset.format;
-      updateConvertControls();
+      cardData.forEach((_, i) => renderCard(i));
     }
 
     function parseUrls(text) {
@@ -753,6 +708,8 @@
               uploader: data.uploader || '',
               formats: data.formats || [],
               selectedHeight: null,
+              convertPreset: 'none',
+              keepOriginal: false,
             };
           }
         } catch (err) {
@@ -824,6 +781,8 @@
       }
 
       let qualitySelect = '';
+      let convertSelect = '';
+      let keepOriginalLabel = '';
       if (!isAudio) {
         const formats = c.formats || [];
         const maxSelected = (c.selectedHeight === null || c.selectedHeight === undefined) ? ' selected' : '';
@@ -836,11 +795,23 @@
         }
         const disabled = formats.length <= 1 ? ' disabled' : '';
         qualitySelect = `<select class="quality-select"${disabled} onchange="pickQuality(${idx}, this.value)">${opts.join('')}</select>`;
+
+        const presetId = c.convertPreset || 'none';
+        const presetOpts = convertPresets.map(p => {
+          const sel = p.id === presetId ? ' selected' : '';
+          return `<option value="${esc(p.id)}"${sel}>${esc(p.label)}</option>`;
+        }).join('');
+        convertSelect = `<select class="convert-select" onchange="pickConvert(${idx}, this.value)">${presetOpts}</select>`;
+
+        if (presetId !== 'none') {
+          const checked = c.keepOriginal ? ' checked' : '';
+          keepOriginalLabel = `<label class="keep-original"><input type="checkbox"${checked} onchange="toggleKeepOriginal(${idx}, this.checked)"> Keep original</label>`;
+        }
       }
 
       let actionHtml = '';
       if (c.status === 'ready') {
-        actionHtml = `<button class="card-dl-btn" onclick="dlCard(${idx})">Download</button>${qualitySelect}`;
+        actionHtml = `<button class="card-dl-btn" onclick="dlCard(${idx})">Download</button>${qualitySelect}${convertSelect}${keepOriginalLabel}`;
       } else if (c.status === 'downloading' || c.status === 'converting') {
         const progress = Math.max(0, Math.min(100, c.progress || 0));
         const isConverting = c.status === 'converting';
@@ -892,6 +863,18 @@
       renderCard(idx);
     }
 
+    function pickConvert(idx, value) {
+      cardData[idx].convertPreset = value || 'none';
+      if (cardData[idx].convertPreset === 'none') {
+        cardData[idx].keepOriginal = false;
+      }
+      renderCard(idx);
+    }
+
+    function toggleKeepOriginal(idx, checked) {
+      cardData[idx].keepOriginal = !!checked;
+    }
+
     async function dlCard(idx) {
       const c = cardData[idx];
       c.status = 'downloading';
@@ -909,8 +892,8 @@
             format: currentFormat,
             max_height: c.selectedHeight ?? null,
             title: c.title || '',
-            convert_preset: currentFormat === 'video' ? selectedPresetId() : 'none',
-            keep_original: currentFormat === 'video' && isConvertActive() && document.getElementById('keepOriginal').checked,
+            convert_preset: currentFormat === 'video' ? (c.convertPreset || 'none') : 'none',
+            keep_original: currentFormat === 'video' && (c.convertPreset && c.convertPreset !== 'none') && !!c.keepOriginal,
           }),
         });
         const data = await res.json();
