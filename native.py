@@ -7,6 +7,8 @@ localhost and presents it inside a WKWebView window.
 
 import logging
 import os
+import socket
+import subprocess
 import sys
 import threading
 import urllib.request
@@ -17,8 +19,46 @@ sys.path.insert(0, APP_DIR)
 PORT = int(os.environ.get("PORT", "8899"))
 SERVER_URL = f"http://127.0.0.1:{PORT}"
 
+
+def _port_available(port):
+    """True if 127.0.0.1:port is free for us to bind to.
+
+    A stale ReClip dev server squatting on the port silently breaks the
+    desktop build — WKWebView would then load whatever HTML that other
+    server happens to serve. Probing up front lets us fail loud instead.
+    """
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.bind(("127.0.0.1", port))
+    except OSError:
+        return False
+    finally:
+        sock.close()
+    return True
+
+
+def _describe_port_holder(port):
+    """Best-effort 'pid command' description of who owns the port. Empty on miss."""
+    try:
+        out = subprocess.check_output(
+            ["lsof", "-nP", "-iTCP:%d" % port, "-sTCP:LISTEN", "-Fpc"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+            timeout=2,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+        return ""
+    pid, command = "", ""
+    for line in out.splitlines():
+        if line.startswith("p"):
+            pid = line[1:]
+        elif line.startswith("c"):
+            command = line[1:]
+    return f"{pid} {command}".strip()
+
 import objc
 from AppKit import (
+    NSAlert,
     NSApp,
     NSApplication,
     NSApplicationActivationPolicyRegular,
@@ -102,6 +142,24 @@ class AppDelegate(NSObject):
         self._create_window()
         self._build_menu()
         NSApp.activateIgnoringOtherApps_(True)
+
+        if not _port_available(PORT):
+            holder = _describe_port_holder(PORT)
+            details = f" (held by PID {holder})" if holder else ""
+            alert = NSAlert.alloc().init()
+            alert.setMessageText_("ReClip can’t start")
+            alert.setInformativeText_(
+                f"Port {PORT} is already in use{details}.\n\n"
+                f"Another ReClip instance or a leftover dev server is bound "
+                f"to it. If we continued, the window would load whatever "
+                f"that other server returns instead of this build.\n\n"
+                f"Quit it and relaunch:\n"
+                f"    lsof -nP -iTCP:{PORT} -sTCP:LISTEN\n"
+                f"    kill <PID>"
+            )
+            alert.runModal()
+            NSApp.terminate_(None)
+            return
 
         threading.Thread(target=self._start_flask, daemon=True).start()
         NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
