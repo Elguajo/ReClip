@@ -49,7 +49,17 @@ def _find_bundled_bin_dir():
     return os.path.join(APP_DIR, "bin")
 
 
+def _find_bgutil_server_dir():
+    # bgutil-ytdlp-pot-provider script-mode: needs ./build/generate_once.js + node_modules.
+    for root in _runtime_roots():
+        candidate = os.path.join(root, "bgutil-server")
+        if os.path.isfile(os.path.join(candidate, "build", "generate_once.js")):
+            return candidate
+    return None
+
+
 BUNDLED_BIN_DIR = _find_bundled_bin_dir()
+BGUTIL_SERVER_DIR = _find_bgutil_server_dir()
 
 if os.path.isdir(BUNDLED_BIN_DIR):
     os.environ["PATH"] = BUNDLED_BIN_DIR + os.pathsep + os.environ.get("PATH", "")
@@ -291,6 +301,21 @@ def _yt_dlp_options(_browser=None, **extra):
         opts["ffmpeg_location"] = ffmpeg_dir
     if _browser:
         opts["cookiesfrombrowser"] = (_browser,)
+    if BGUTIL_SERVER_DIR:
+        # bgutil-ytdlp-pot-provider (script mode) — bypasses YouTube bot check
+        # by minting a PO token via the bundled JS server. Pinning the player
+        # to `mweb` is the combo recommended by upstream so the generated
+        # token is actually consumed (other clients like web_safari need
+        # extra Visitor Data and fall back to the bot-check path).
+        opts.setdefault("extractor_args", {})
+        opts["extractor_args"].setdefault(
+            "youtubepot-bgutilscript", {"server_home": [BGUTIL_SERVER_DIR]}
+        )
+        opts["extractor_args"].setdefault("youtube", {"player_client": ["mweb"]})
+        # yt-dlp's signature/n-challenge solver runs in a JS runtime; default
+        # is Deno, but we ship Node alongside the bgutil server. Enable node
+        # explicitly so EJS scripts (from yt-dlp-ejs python package) run.
+        opts.setdefault("js_runtimes", {"node": {}})
     opts.update(extra)
     return opts
 

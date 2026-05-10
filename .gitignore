@@ -12,6 +12,7 @@ assets/*.mov
 .kilo/
 build/
 dist/
+.build-cache/
 *.spec
 release/
 ReClip-*-macOS.zip

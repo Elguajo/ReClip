@@ -1,5 +1,7 @@
 flask
 yt-dlp
+yt-dlp-ejs
+bgutil-ytdlp-pot-provider
 certifi
 pyobjc-core; sys_platform == "darwin"
 pyobjc-framework-Cocoa; sys_platform == "darwin"
