@@ -62,6 +62,9 @@ After installation: press **Cmd+Space**, type **ReClip**, and launch it.
 The release build bundles Python dependencies and `ffmpeg`, so you do not need
 to clone the repository or run an install script.
 
+Pre-built app bundles are published as GitHub release artifacts, not committed
+to the source repository. Local builds create `dist/ReClip.app`.
+
 If macOS blocks the app because it is not notarized yet, remove quarantine for
 this app only:
 

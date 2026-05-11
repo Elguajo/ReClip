@@ -15,6 +15,7 @@ assets/*.mov
 *-claude-pack.zip
 build/
 dist/
+ReClip.app/
 .build-cache/
 *.spec
 release/
