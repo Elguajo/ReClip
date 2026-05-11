@@ -136,10 +136,10 @@ YouTube, TikTok, Instagram, Twitter/X, Reddit, Facebook, Vimeo, Twitch, Dailymot
 
 - **Backend:** Python + Flask
 - **Frontend:** Vanilla HTML/CSS/JS (single file, no build step)
-- **Native macOS wrapper:** PyObjC + WKWebView
+- **Native macOS wrapper:** PyObjC + WKWebView (`native.py`); experimental pywebview migration launcher in `native_pywebview.py`
 - **Download engine:** [yt-dlp](https://github.com/yt-dlp/yt-dlp) + [ffmpeg](https://ffmpeg.org/)
 - **YouTube bot-check bypass (bundled `.app` only):** [bgutil-ytdlp-pot-provider](https://github.com/Brainicism/bgutil-ytdlp-pot-provider) + [yt-dlp-ejs](https://github.com/yt-dlp/yt-dlp-ejs) running on a bundled Node.js 22 runtime
-- **Dependencies:** Flask, yt-dlp, yt-dlp-ejs, bgutil-ytdlp-pot-provider, certifi, and macOS-only PyObjC packages
+- **Dependencies:** Flask, pywebview, yt-dlp, yt-dlp-ejs, bgutil-ytdlp-pot-provider, certifi, and macOS-only PyObjC packages
 - **Tests:** pytest
 
 ## Tests

@@ -56,27 +56,27 @@ This is the **highest-priority** phase because it unblocks the AV use case (down
 
 ### Implementation tasks
 
-- [ ] **Backend — `app.py`:** in the existing fetch-info endpoint, extract a list of unique sorted heights from `info['formats']` and include them in the response payload alongside the existing thumbnail/title fields. Include a size estimate per height (max `filesize`/`filesize_approx` of formats at that height) when available.
-- [ ] **Backend — `app.py` or new helper:** function `build_format_string(max_height: Optional[int]) -> str` returning the yt-dlp `-f` string. `None` → `bv*+ba/b`. Pure function. Easy to test.
-- [ ] **Backend — download endpoint:** accept an optional `max_height` parameter from the client; pass through to the format-string builder.
-- [ ] **Frontend — `static/script.js` (or wherever the fetch handler lives):** populate the quality dropdown from the response, with the friendly labels and size annotations.
-- [ ] **Frontend — `templates/index.html`:** the quality dropdown markup if it isn't already there; otherwise just rebind it.
-- [ ] **Friendly-label utility** in JS: `formatHeight(h)` returning the labels above. Mirror the spec exactly so labels stay consistent.
+- [x] **Backend — `app.py`:** in the existing fetch-info endpoint, extract a list of unique sorted heights from `info['formats']` and include them in the response payload alongside the existing thumbnail/title fields. Include a size estimate per height (max `filesize`/`filesize_approx` of formats at that height) when available.
+- [x] **Backend — `app.py` or new helper:** function `build_format_string(max_height: Optional[int]) -> str` returning the yt-dlp `-f` string. `None` → `bv*+ba/b`. Pure function. Easy to test.
+- [x] **Backend — download endpoint:** accept an optional `max_height` parameter from the client; pass through to the format-string builder.
+- [x] **Frontend — `static/script.js` (or wherever the fetch handler lives):** populate the quality dropdown from the response, with the friendly labels and size annotations.
+- [x] **Frontend — `templates/index.html`:** the quality dropdown markup if it isn't already there; otherwise just rebind it.
+- [x] **Friendly-label utility** in JS: `formatHeight(h)` returning the labels above. Mirror the spec exactly so labels stay consistent.
 
 ### Tests
 
-- [ ] `tests/test_format_builder.py`:
+- [x] `tests/test_format_builder.py`:
   - `None → "bv*+ba/b"`
   - `2160 → "bv*[height<=2160]+ba/b[height<=2160]"`
   - `4320 → "bv*[height<=4320]+ba/b[height<=4320]"`
   - Edge: `0` and negative heights raise `ValueError`
-- [ ] `tests/test_app.py` — extend the fetch-info test:
+- [x] `tests/test_app.py` — extend the fetch-info test:
   - Mock `YoutubeDL.extract_info` returning a fixture with mixed heights `[4320, 2160, 1080, 720, 360]` plus several non-video formats (audio-only)
   - Assert the response contains exactly those heights, sorted highest-first, with size estimates
-- [ ] `tests/test_app.py` — download endpoint:
+- [x] `tests/test_app.py` — download endpoint:
   - Accepts `max_height=2160` in the request body
   - Passes the right format string to the JobManager (mocked yt-dlp)
-- [ ] `tests/test_format_labels.py` — JS-side label function. Either port to Python and unit-test, or add a tiny browser-free JS test (Node + assert), depending on what's already in the test setup.
+- [x] `tests/test_format_labels.py` — JS-side label function. Either port to Python and unit-test, or add a tiny browser-free JS test (Node + assert), depending on what's already in the test setup.
 
 ### Acceptance criteria
 
@@ -162,30 +162,30 @@ CONVERSION_PRESETS = [
 
 ### Implementation tasks
 
-- [ ] New module `presets.py` with the constants above plus a `get_preset(preset_id)` helper
-- [ ] `job_manager.py`:
+- [x] New module `presets.py` with the constants above plus a `get_preset(preset_id)` helper
+- [x] `job_manager.py`:
   - New job state `converting`
   - State transition: `downloading → converting → completed` when a preset is chosen
   - Cancellation handling during convert (terminate the ffmpeg subprocess cleanly)
   - Progress reporting from ffmpeg stderr parsing
   - On error during convert, transition to `error` and keep the source file
-- [ ] `app.py`: download endpoint accepts `convert_preset` field, passes through
-- [ ] `templates/index.html`: Convert dropdown + optional "Keep original" checkbox
-- [ ] `static/script.js`: send the chosen preset, handle the new `converting` progress state
-- [ ] ffmpeg path resolution: helper that returns the bundled binary path in the .app, or `ffmpeg` from PATH when running locally
+- [x] `app.py`: download endpoint accepts `convert_preset` field, passes through
+- [x] `templates/index.html`: Convert dropdown + optional "Keep original" checkbox
+- [x] `static/script.js`: send the chosen preset, handle the new `converting` progress state
+- [x] ffmpeg path resolution: helper that returns the bundled binary path in the .app, or `ffmpeg` from PATH when running locally
 
 ### Tests
 
-- [ ] `tests/test_presets.py`:
+- [x] `tests/test_presets.py`:
   - `get_preset("mp4-h264")` returns the expected dict
   - Unknown preset id raises a clear error
   - `none` preset is detectable (`ext is None`)
-- [ ] `tests/test_job_manager.py`:
+- [x] `tests/test_job_manager.py`:
   - Lifecycle test with mocked yt-dlp + mocked ffmpeg subprocess: states go `pending → downloading → converting → completed`
   - Cancellation during convert
   - ffmpeg failure leaves source file intact
   - With `none` preset, convert step is skipped
-- [ ] `tests/test_app.py`:
+- [x] `tests/test_app.py`:
   - Download endpoint accepts and routes the preset
   - Default is `none` if not provided
 
@@ -205,7 +205,8 @@ CONVERSION_PRESETS = [
 
 ### Tasks
 
-- [ ] Add `pywebview` to `requirements.txt`; on Windows it pulls in `pythonnet` automatically
+- [x] Add `pywebview` to `requirements.txt`; on Windows it pulls in `pythonnet` automatically
+- [x] Add isolated `native_pywebview.py` migration spike that starts Flask on a free local port and opens a pywebview window with matching title/dimensions/min size
 - [ ] Rewrite `native.py`: launches the Flask server in a thread on a free port, then opens a `pywebview` window pointing at `http://localhost:<port>`. Window title, dimensions, min size match the current macOS behavior
 - [ ] Keep the existing public surface: whatever `app.py` and `build-macos-app.sh` import from `native.py` should still work
 - [ ] Verify on macOS — visual parity with current PyObjC version. Show-in-Finder still works (pywebview's JS API exposes `pywebview.api.<func>` for backend calls — wire the existing endpoint through that or keep the HTTP call, whichever is simpler)
