@@ -3,6 +3,7 @@ version: alpha
 name: ReClip
 description: A compact, self-hosted media downloader UI for AV workflow operators.
 colors:
+  primary: "#1a1a1d"
   bg: "#f4f1eb"
   fg: "#3a3a38"
   accent: "#e85d2a"
@@ -21,7 +22,7 @@ colors:
   dark-card-border: "#3a3a3d"
   dark-success: "#45a869"
   dark-error: "#e05a5a"
-  on-accent: "#ffffff"
+  on-accent: "#1a1a1d"
 typography:
   brand:
     fontFamily: Instrument Serif
@@ -77,6 +78,11 @@ components:
     textColor: "{colors.fg}"
     width: 620px
     padding: 60px 24px 80px
+  page-dark:
+    backgroundColor: "{colors.dark-bg}"
+    textColor: "{colors.dark-fg}"
+    width: 620px
+    padding: 60px 24px 80px
   button-primary:
     backgroundColor: "{colors.accent}"
     textColor: "{colors.on-accent}"
@@ -85,8 +91,16 @@ components:
     padding: 10px 20px
   button-primary-hover:
     backgroundColor: "{colors.accent-hover}"
+  button-primary-dark:
+    backgroundColor: "{colors.dark-accent}"
+    textColor: "{colors.primary}"
+    typography: "{typography.control}"
+    rounded: "{rounded.control}"
+    padding: 10px 20px
+  button-primary-dark-hover:
+    backgroundColor: "{colors.dark-accent-hover}"
   button-secondary:
-    backgroundColor: "{colors.fg}"
+    backgroundColor: "{colors.primary}"
     textColor: "{colors.bg}"
     typography: "{typography.control}"
     rounded: "{rounded.control}"
@@ -102,16 +116,51 @@ components:
     textColor: "{colors.fg}"
     rounded: "{rounded.card}"
     padding: 14px
+  card-dark:
+    backgroundColor: "{colors.dark-card}"
+    textColor: "{colors.dark-fg}"
+    rounded: "{rounded.card}"
+    padding: 14px
   select:
     backgroundColor: "{colors.card}"
     textColor: "{colors.fg}"
     rounded: "{rounded.select}"
     padding: 5px 26px 5px 10px
-  progress:
+  select-dark:
+    backgroundColor: "{colors.dark-card}"
+    textColor: "{colors.dark-fg}"
+    rounded: "{rounded.select}"
+    padding: 5px 26px 5px 10px
+  metadata:
+    textColor: "{colors.muted}"
+    typography: "{typography.label}"
+  metadata-dark:
+    textColor: "{colors.dark-muted}"
+    typography: "{typography.label}"
+  progress-track:
     backgroundColor: "{colors.card-border}"
-    textColor: "{colors.accent}"
     rounded: "{rounded.pill}"
     height: 6px
+  progress-track-dark:
+    backgroundColor: "{colors.dark-card-border}"
+    rounded: "{rounded.pill}"
+    height: 6px
+  progress-fill:
+    backgroundColor: "{colors.accent}"
+    rounded: "{rounded.pill}"
+    height: 6px
+  status-success:
+    textColor: "{colors.success}"
+    typography: "{typography.label}"
+  status-success-dark:
+    textColor: "{colors.dark-success}"
+    typography: "{typography.label}"
+  status-error:
+    textColor: "{colors.error}"
+    typography: "{typography.label}"
+  status-error-dark:
+    textColor: "{colors.dark-error}"
+    typography: "{typography.label}"
 ---
 
 ## Overview
@@ -229,6 +278,7 @@ Use one progress row for downloading and converting. Downloading may show ETA; c
 - Do use existing CSS custom properties before adding any new token.
 - Do keep labels short, operational, and useful under pressure.
 - Do preserve light/dark parity whenever adding UI.
+- Do use dark ink text on orange accent buttons for small control text; this is the contrast-safe target for future UI edits.
 - Do keep vanilla HTML/CSS/JS and no frontend build step.
 - Do test new UI against long titles, many URLs, disabled quality selects, conversion states, and mobile width.
 - Don't add framework-specific design assumptions.
