@@ -11,7 +11,18 @@ import pytest
 
 
 pytest.importorskip("AppKit", reason="native.py needs PyObjC")
-from native import _port_available  # noqa: E402  (import-after-skip is intentional)
+from native import (  # noqa: E402  (import-after-skip is intentional)
+    WINDOW_HEIGHT,
+    WINDOW_MIN_SIZE,
+    WINDOW_WIDTH,
+    _port_available,
+)
+
+
+def test_window_geometry_matches_launch_contract():
+    assert WINDOW_WIDTH == 720
+    assert WINDOW_HEIGHT == 640
+    assert WINDOW_MIN_SIZE == (620, 560)
 
 
 def test_port_available_when_nothing_listens():

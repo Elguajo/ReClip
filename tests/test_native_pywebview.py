@@ -66,7 +66,7 @@ def test_main_starts_server_and_window(monkeypatch):
     assert (
         "create_window",
         ("ReClip", "http://127.0.0.1:49152"),
-        {"width": 720, "height": 860, "min_size": (480, 600)},
+        {"width": 720, "height": 640, "min_size": (620, 560)},
     ) in calls
     assert ("start",) in calls
 

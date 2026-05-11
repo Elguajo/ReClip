@@ -34,6 +34,13 @@ fi
 
 FFMPEG_BIN="$(command -v ffmpeg)"
 FFPROBE_BIN="$(command -v ffprobe || true)"
+APP_ICON="assets/AppIcon.icns"
+
+if [ ! -f "$APP_ICON" ]; then
+    echo "App icon not found at ${APP_ICON}."
+    echo "Restore the canonical icon before building."
+    exit 1
+fi
 
 # --- bgutil POT provider bundle (Node + JS generate_once.js) -----------------
 # Bundled into Resources/bin/node and Resources/bgutil-server/ so yt-dlp can
@@ -94,7 +101,7 @@ pyinstaller_args=(
     --windowed
     --name ReClip
     --osx-bundle-identifier com.local.reclip
-    --icon ReClip.app/Contents/Resources/AppIcon.icns
+    --icon "$APP_ICON"
     --add-data templates:templates
     --add-data static:static
     --add-binary "$FFMPEG_BIN:bin"

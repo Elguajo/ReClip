@@ -18,6 +18,9 @@ sys.path.insert(0, APP_DIR)
 
 PORT = int(os.environ.get("PORT", "8899"))
 SERVER_URL = f"http://127.0.0.1:{PORT}"
+WINDOW_WIDTH = 720
+WINDOW_HEIGHT = 640
+WINDOW_MIN_SIZE = (620, 560)
 
 
 def _port_available(port):
@@ -167,8 +170,8 @@ class AppDelegate(NSObject):
         )
 
     def _create_window(self):
-        screen = NSScreen.mainScreen().frame()
-        width, height = 720, 860
+        screen = NSScreen.mainScreen().visibleFrame()
+        width, height = WINDOW_WIDTH, WINDOW_HEIGHT
         x = (screen.size.width - width) / 2
         y = (screen.size.height - height) / 2
 
@@ -185,7 +188,7 @@ class AppDelegate(NSObject):
             False,
         )
         self.window.setTitle_("ReClip")
-        self.window.setMinSize_(NSSize(480, 600))
+        self.window.setMinSize_(NSSize(*WINDOW_MIN_SIZE))
         self.window.setTitlebarAppearsTransparent_(True)
         self.window.setTitleVisibility_(1)
 
