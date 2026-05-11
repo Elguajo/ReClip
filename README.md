@@ -8,8 +8,6 @@ macOS-focused quality-of-life features, safer download handling, and tests.
 ![Python](https://img.shields.io/badge/python-3.8+-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-https://github.com/user-attachments/assets/419d3e50-c933-444b-8cab-a9724986ba05
-
 ![ReClip MP3 Mode](assets/preview-mp3.png)
 
 ## Features
