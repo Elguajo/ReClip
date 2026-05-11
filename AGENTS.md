@@ -112,6 +112,38 @@ open dist/ReClip.app
 docker build -t reclip . && docker run -p 8899:8899 reclip
 ```
 
+### Release notes style
+
+Release notes must be written for ReClip users first, not as raw commit summaries.
+
+- Start with one plain sentence describing the build, e.g. "Standalone macOS app build."
+- Use clear user-facing sections such as `Features`, `Fixes`, `What changed`, `Cross-platform groundwork`, `Developer / project hygiene`, and `Install`.
+- Keep technical commit details in a final `Changelog` section only.
+- Always include install steps and the unsigned macOS Gatekeeper note for app releases.
+- Avoid leading with internal file moves, tests, or refactors unless they directly affect users.
+
+Use this shape by default:
+
+```markdown
+Standalone macOS app build.
+
+## Features / What changed
+- User-facing change in plain language.
+
+## Fixes
+- User-visible bug fix or reliability improvement.
+
+## Install
+1. Download `ReClip-vX.Y.Z-macOS.zip` or `.dmg`.
+2. Verify with the matching `.sha256` if you want.
+3. Move `ReClip.app` to `/Applications`.
+
+First launch: right-click `ReClip.app` → Open (macOS Gatekeeper, build is unsigned).
+
+## Changelog
+- `abc1234` Commit subject
+```
+
 **After every code change:**
 1. Run the relevant test file(s); add new tests for new behavior
 2. If `app.py` or `job_manager.py` changed: run the full suite (`pytest -q`)
