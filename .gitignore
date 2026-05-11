@@ -10,6 +10,8 @@ assets/*.mov
 .env.development
 
 .kilo/
+.claude/
+*-claude-pack.zip
 build/
 dist/
 .build-cache/
