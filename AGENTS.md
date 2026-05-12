@@ -23,7 +23,7 @@ This fork extends the upstream `averygan/reclip` with:
 - **Phase A3:** Cross-platform support — replace PyObjC + WKWebView wrapper with `pywebview` so the same codebase runs on Windows
 - **Phase A4:** Windows build pipeline + GitHub Actions release automation
 
-See `ROADMAP.md` for the phased plan with concrete tasks and acceptance criteria.
+See `docs/ROADMAP.md` for the phased plan with concrete tasks and acceptance criteria.
 
 **Target users:** AV integration engineers (RedMouse and similar shops). Not developers — UX must remain simple and the app must just work after install. Defaults matter more than configurability.
 
@@ -83,7 +83,9 @@ See `ROADMAP.md` for the phased plan with concrete tasks and acceptance criteria
 ├── requirements-build.txt  # PyInstaller / build deps
 │
 ├── README.md
-├── ROADMAP.md              # ⭐ Phased development plan — read before any work
+├── docs/
+│   ├── ROADMAP.md          # ⭐ Phased development plan — read before any work
+│   └── CLAUDE_CODE_GUIDE.md
 └── AGENTS.md               # This file
 ```
 
@@ -206,11 +208,11 @@ When adding a new job phase (e.g. conversion in Phase A2):
 
 ## 7. Phase Discipline (read this before coding)
 
-**Before any non-trivial change**, check `ROADMAP.md` and confirm the change belongs to the current phase.
+**Before any non-trivial change**, check `docs/ROADMAP.md` and confirm the change belongs to the current phase.
 
 - **Stay in the current phase.** Don't fix or improve unrelated things "while you're there." Leave a `# TODO:` with phase reference if you spot something — don't act on it.
 - **Don't skip phases.** If a Phase A3 task seems blocked by a Phase A1 issue, fix the A1 issue first or ask the user.
-- **A phase is done** when its acceptance criteria pass and the user has confirmed. Then mark items complete in `ROADMAP.md` and ask before starting the next phase.
+- **A phase is done** when its acceptance criteria pass and the user has confirmed. Then mark items complete in `docs/ROADMAP.md` and ask before starting the next phase.
 
 ---
 
@@ -272,7 +274,7 @@ When the time comes to swap PyObjC for pywebview:
 
 ## 12. When Uncertain
 
-1. Re-read `ROADMAP.md` for the current phase's tasks and acceptance criteria
+1. Re-read `docs/ROADMAP.md` for the current phase's tasks and acceptance criteria
 2. Search the existing codebase for similar patterns — match what's already there
 3. Ask the user a single concrete question rather than guessing
 4. Show the smallest possible change first; expand only after user approves

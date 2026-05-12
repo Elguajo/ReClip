@@ -1,6 +1,6 @@
 # Claude Code Workflow Guide for ReClip
 
-Pragmatic guide to installing Claude Code and using it to drive the work in `ROADMAP.md`. This file is for **you, the human** — not for Claude. Once Claude Code is running in the repo, it will read `AGENTS.md` and `ROADMAP.md` automatically.
+Pragmatic guide to installing Claude Code and using it to drive the work in `docs/ROADMAP.md`. This file is for **you, the human** — not for Claude. Once Claude Code is running in the repo, it should read `AGENTS.md` and `docs/ROADMAP.md`.
 
 ---
 
@@ -64,18 +64,19 @@ For ReClip-sized work, **Pro is enough** to start; if you'll be running long aut
 
 ## 3. Drop the context files into ReClip
 
-In the root of your local ReClip clone, place:
+In the root of your local ReClip clone, make sure these tracked files exist:
 
 - `AGENTS.md` (provided)
-- `ROADMAP.md` (provided)
+- `docs/ROADMAP.md` (provided)
 
 Both are picked up automatically by Claude Code. Commit them:
 
 ```bash
 cd /path/to/ReClip
 cp /path/to/downloaded/AGENTS.md .
-cp /path/to/downloaded/ROADMAP.md .
-git add AGENTS.md ROADMAP.md
+mkdir -p docs
+cp /path/to/downloaded/ROADMAP.md docs/ROADMAP.md
+git add AGENTS.md docs/ROADMAP.md
 git commit -m "docs: add AGENTS.md and ROADMAP.md for AI-assisted development"
 ```
 
@@ -104,7 +105,7 @@ Below is the actual text to paste into Claude Code, in order. **Don't skip ahead
 ### Phase A0 — Familiarization (20–30 minutes)
 
 ```
-You are working on the ReClip repository. Read AGENTS.md and ROADMAP.md
+You are working on the ReClip repository. Read AGENTS.md and docs/ROADMAP.md
 end to end before doing anything else. Then complete Phase A0:
 
 1. Read app.py, job_manager.py, native.py end to end
@@ -143,12 +144,12 @@ existing flow works. Run `python -m pytest -q` and confirm all tests
 pass. Report back with the results — don't make code changes.
 ```
 
-When that's confirmed: **Phase A0 done.** Tick the checkboxes in `ROADMAP.md`.
+When that's confirmed: **Phase A0 done.** Tick the checkboxes in `docs/ROADMAP.md`.
 
 ### Phase A1 — Dynamic Quality Detection
 
 ```
-Phase A0 is complete. Now implement Phase A1 from ROADMAP.md exactly
+Phase A0 is complete. Now implement Phase A1 from docs/ROADMAP.md exactly
 as specified. The acceptance criteria there are the contract.
 
 Start by writing the tests (TDD), then make them pass:
@@ -166,7 +167,7 @@ Then implement the backend changes, then the frontend. Run the tests
 after each step. Don't move on if tests fail.
 
 When done, walk me through how to manually verify each acceptance
-criterion in ROADMAP.md Phase A1.
+criterion in docs/ROADMAP.md Phase A1.
 ```
 
 When Claude reports tests are written: **review them**. Test quality drives implementation quality. Push back on weak tests:
@@ -186,7 +187,7 @@ in clean, atomic commits — one for tests, one for backend, one for
 frontend. Show me the commits before pushing.
 ```
 
-Then mark Phase A1 done in `ROADMAP.md` (or have Claude do it).
+Then mark Phase A1 done in `docs/ROADMAP.md` (or have Claude do it).
 
 ### Phase A2 — Conversion Presets
 
@@ -194,9 +195,9 @@ Start a fresh Claude Code session (`/clear` or quit and restart) for a clean con
 
 ```
 Phases A0 and A1 are complete and merged. Implement Phase A2 from
-ROADMAP.md.
+docs/ROADMAP.md.
 
-The four presets are specified verbatim in ROADMAP.md — copy them
+The four presets are specified verbatim in docs/ROADMAP.md — copy them
 exactly into a new presets.py module. Don't tweak the ffmpeg args.
 
 Order of work:
@@ -221,7 +222,7 @@ file and I want to review the state machine changes carefully.
 ### Phase A3 — pywebview Migration
 
 ```
-Phase A2 is complete and merged. Implement Phase A3 from ROADMAP.md.
+Phase A2 is complete and merged. Implement Phase A3 from docs/ROADMAP.md.
 
 This phase changes the native wrapper but should NOT change any
 frontend or backend behavior. The acceptance test is "the macOS app
@@ -244,7 +245,7 @@ I will manually test on Windows after you finish the macOS verification.
 ### Phase A4 — Windows Build & Release Pipeline
 
 ```
-Phases A0–A3 are complete. Implement Phase A4 from ROADMAP.md.
+Phases A0-A3 are complete. Implement Phase A4 from docs/ROADMAP.md.
 
 Order of work:
 1. Write build-windows.ps1 mirroring build-macos-app.sh
@@ -313,7 +314,7 @@ When ready, we'll tag v1.1.0 and let CI cut the release.
 
 **Session is lost / you ran out of context** → `/clear`, paste a fresh prompt with "Phase Ax is partially complete: <describe state>. Continue from <specific point>."
 
-**A phase keeps drifting** → the spec in `ROADMAP.md` may be ambiguous. Tighten it (commit the change), then continue.
+**A phase keeps drifting** → the spec in `docs/ROADMAP.md` may be ambiguous. Tighten it (commit the change), then continue.
 
 ---
 
@@ -324,6 +325,6 @@ The roadmap stops at A5. After release:
 1. Collect feedback (you, your colleagues at RedMouse, anyone else who installs it)
 2. Triage into Phase A6 candidates
 3. Decide what's actually worth doing — most "wouldn't it be nice if" ideas don't survive a week of reflection
-4. Update `ROADMAP.md` with selected items, then start Phase B1 / A6.1 / whatever the numbering becomes
+4. Update `docs/ROADMAP.md` with selected items, then start Phase B1 / A6.1 / whatever the numbering becomes
 
 The roadmap is a living document. Keep it accurate.
