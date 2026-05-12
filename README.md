@@ -103,6 +103,13 @@ not notarized.
 docker build -t reclip . && docker run -p 8899:8899 reclip
 ```
 
+### Continue development on another machine
+
+Use the handoff checklist in
+[`docs/handoff/CONTINUE_ON_NEW_MACHINE.md`](docs/handoff/CONTINUE_ON_NEW_MACHINE.md)
+to clone from GitHub, recreate the local environment, run tests, and avoid
+committing local build artifacts.
+
 ## Usage
 
 1. Paste one or more video URLs into the input box

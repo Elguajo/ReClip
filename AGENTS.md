@@ -76,7 +76,7 @@ See `docs/ROADMAP.md` for the phased plan with concrete tasks and acceptance cri
 ├── tests/                  # pytest suite
 │
 ├── assets/                 # Screenshots, preview images
-├── ReClip.app/             # Pre-built macOS bundle in repo
+├── ReClip.app/             # Generated local macOS bundle, ignored by git
 │
 ├── requirements.txt        # Runtime deps
 ├── requirements-dev.txt    # Test/dev deps
@@ -85,7 +85,8 @@ See `docs/ROADMAP.md` for the phased plan with concrete tasks and acceptance cri
 ├── README.md
 ├── docs/
 │   ├── ROADMAP.md          # ⭐ Phased development plan — read before any work
-│   └── CLAUDE_CODE_GUIDE.md
+│   ├── CLAUDE_CODE_GUIDE.md
+│   └── handoff/
 └── AGENTS.md               # This file
 ```
 
