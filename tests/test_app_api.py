@@ -45,6 +45,28 @@ def test_info_rejects_invalid_json(tmp_path, monkeypatch):
     assert res.get_json()["error"] == "No URL provided"
 
 
+def test_bundled_pot_provider_disables_browser_cookie_reads(monkeypatch):
+    monkeypatch.delenv("RECLIP_YT_BROWSER", raising=False)
+    monkeypatch.setattr(reclip_app, "BGUTIL_SERVER_DIR", "/bundle/bgutil-server")
+
+    assert reclip_app._browser_candidates() == [None]
+
+
+def test_browser_override_still_works_with_bundled_pot_provider(monkeypatch):
+    monkeypatch.setenv("RECLIP_YT_BROWSER", "chrome")
+    monkeypatch.setattr(reclip_app, "BGUTIL_SERVER_DIR", "/bundle/bgutil-server")
+
+    assert reclip_app._browser_candidates() == ["chrome"]
+
+
+def test_source_run_keeps_browser_cookie_fallbacks_on_macos(monkeypatch):
+    monkeypatch.delenv("RECLIP_YT_BROWSER", raising=False)
+    monkeypatch.setattr(reclip_app, "BGUTIL_SERVER_DIR", None)
+    monkeypatch.setattr(reclip_app.sys, "platform", "darwin")
+
+    assert reclip_app._browser_candidates() == ["safari", "chrome", "firefox", None]
+
+
 def test_info_returns_heights_with_labels_and_size_estimates(tmp_path, monkeypatch):
     client = make_client(tmp_path, monkeypatch)
 

@@ -277,13 +277,16 @@ _FRAGMENT_RE = re.compile(r"\.f\d+\.")
 
 
 def _browser_candidates():
-    # RECLIP_YT_BROWSER: 'none' disables cookies; a browser name pins to that one;
-    # unset uses platform defaults with no-cookies as final fallback.
+    # RECLIP_YT_BROWSER: 'none' disables cookies; a browser name pins to that one.
+    # Bundled builds use the bgutil POT provider, so avoid browser cookies by
+    # default. On macOS those cookie reads can trigger repeated Keychain prompts.
     override = os.environ.get("RECLIP_YT_BROWSER", "").strip().lower()
     if override == "none":
         return [None]
     if override in _KNOWN_BROWSERS:
         return [override]
+    if BGUTIL_SERVER_DIR:
+        return [None]
     if sys.platform == "darwin":
         return ["safari", "chrome", "firefox", None]
     return ["chrome", "firefox", None]
