@@ -109,11 +109,9 @@ pyinstaller_args=(
     --collect-all yt_dlp_plugins
     --collect-all yt_dlp_ejs
     --collect-all bgutil_ytdlp_pot_provider
+    --collect-all webview
     --collect-data certifi
-    --hidden-import objc
-    --hidden-import AppKit
-    --hidden-import Foundation
-    --hidden-import WebKit
+    --hidden-import webview
 )
 
 if [ -n "$FFPROBE_BIN" ]; then

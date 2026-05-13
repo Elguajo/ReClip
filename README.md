@@ -20,7 +20,7 @@ macOS-focused quality-of-life features, safer download handling, and tests.
 - Choose where downloaded files are saved
 - Reveal a finished file in Finder
 - Light/dark theme toggle with saved preference
-- Native macOS app wrapper with a WKWebView window
+- Native desktop app wrapper powered by pywebview
 - Progress, cancel, retry, and safer job state handling
 - Clean, responsive UI — no frameworks, no build step
 
@@ -143,10 +143,10 @@ YouTube, TikTok, Instagram, Twitter/X, Reddit, Facebook, Vimeo, Twitch, Dailymot
 
 - **Backend:** Python + Flask
 - **Frontend:** Vanilla HTML/CSS/JS (single file, no build step)
-- **Native macOS wrapper:** PyObjC + WKWebView (`native.py`); experimental pywebview migration launcher in `native_pywebview.py`
+- **Native desktop wrapper:** pywebview (`native.py`) backed by WKWebView on macOS and Edge WebView2 on Windows
 - **Download engine:** [yt-dlp](https://github.com/yt-dlp/yt-dlp) + [ffmpeg](https://ffmpeg.org/)
 - **YouTube bot-check bypass (bundled `.app` only):** [bgutil-ytdlp-pot-provider](https://github.com/Brainicism/bgutil-ytdlp-pot-provider) + [yt-dlp-ejs](https://github.com/yt-dlp/yt-dlp-ejs) running on a bundled Node.js 22 runtime
-- **Dependencies:** Flask, pywebview, yt-dlp, yt-dlp-ejs, bgutil-ytdlp-pot-provider, certifi, and macOS-only PyObjC packages
+- **Dependencies:** Flask, pywebview, yt-dlp, yt-dlp-ejs, bgutil-ytdlp-pot-provider, certifi, and pywebview platform backend packages
 - **Tests:** pytest
 
 ## Tests

@@ -206,12 +206,12 @@ CONVERSION_PRESETS = [
 ### Tasks
 
 - [x] Add `pywebview` to `requirements.txt`; on Windows it pulls in `pythonnet` automatically
-- [x] Add isolated `native_pywebview.py` migration spike that starts Flask on a free local port and opens a pywebview window with matching title/dimensions/min size
-- [ ] Rewrite `native.py`: launches the Flask server in a thread on a free port, then opens a `pywebview` window pointing at `http://localhost:<port>`. Window title, dimensions, min size match the current macOS behavior
-- [ ] Keep the existing public surface: whatever `app.py` and `build-macos-app.sh` import from `native.py` should still work
-- [ ] Verify on macOS — visual parity with current PyObjC version. Show-in-Finder still works (pywebview's JS API exposes `pywebview.api.<func>` for backend calls — wire the existing endpoint through that or keep the HTTP call, whichever is simpler)
+- [x] Validate pywebview in isolation, then retire the temporary launcher after promoting the implementation into `native.py`
+- [x] Rewrite `native.py`: launches the Flask server in a thread on a free port, then opens a `pywebview` window pointing at `http://localhost:<port>`. Window title, dimensions, min size match the current macOS behavior
+- [x] Keep the existing public surface: whatever `app.py` and `build-macos-app.sh` import from `native.py` should still work
+- [ ] Verify on macOS — visual parity with the previous native wrapper. Show-in-Finder still works (pywebview's JS API exposes `pywebview.api.<func>` for backend calls — wire the existing endpoint through that or keep the HTTP call, whichever is simpler)
 - [ ] Manual test on Windows 10 or 11 — fresh checkout, `pip install -r requirements.txt`, `python app.py` (or whatever the Windows entry is) opens a window. Paste URL, fetch, download. Save folder picker works. Theme toggle works.
-- [ ] Update `build-macos-app.sh` if PyInstaller needs new hidden-imports for pywebview
+- [x] Update `build-macos-app.sh` if PyInstaller needs new hidden-imports for pywebview
 
 ### Acceptance criteria
 

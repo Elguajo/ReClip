@@ -91,7 +91,7 @@ Completed implementation work in `docs/ROADMAP.md`:
 
 - Phase A1 implementation tasks and tests are checked off.
 - Phase A2 implementation tasks and tests are checked off.
-- Phase A3 has a `native_pywebview.py` spike checked off, but the main `native.py` migration and Windows verification remain open.
+- Phase A3 has promoted the pywebview launcher into `native.py`; Windows verification remains open.
 
 Before starting new work, read:
 

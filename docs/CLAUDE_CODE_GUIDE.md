@@ -237,7 +237,7 @@ Order of work:
 4. Test on macOS — must look and feel identical to current behavior
 
 Don't attempt the Windows build yet — that's Phase A4. Just confirm
-that pywebview works on macOS as a drop-in for the PyObjC wrapper.
+that pywebview works on macOS as the native wrapper.
 
 I will manually test on Windows after you finish the macOS verification.
 ```

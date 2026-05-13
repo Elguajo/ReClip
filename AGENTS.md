@@ -20,7 +20,7 @@ This fork extends the upstream `averygan/reclip` with:
 **Active development direction (this fork):**
 - **Phase A1:** Dynamic quality detection up to 8K and beyond, populated from actual formats reported by yt-dlp per video
 - **Phase A2:** Post-download conversion presets for AV workflows (H.264, HEVC, ProRes 422, ProRes 422 HQ)
-- **Phase A3:** Cross-platform support — replace PyObjC + WKWebView wrapper with `pywebview` so the same codebase runs on Windows
+- **Phase A3:** Cross-platform support — native wrapper now uses `pywebview` so the same codebase can run on Windows
 - **Phase A4:** Windows build pipeline + GitHub Actions release automation
 
 See `docs/ROADMAP.md` for the phased plan with concrete tasks and acceptance criteria.
@@ -35,7 +35,7 @@ See `docs/ROADMAP.md` for the phased plan with concrete tasks and acceptance cri
 |---|---|
 | Backend | Python 3.8+, Flask |
 | Frontend | Vanilla HTML / CSS / JS in `templates/` and `static/` |
-| Native wrapper | PyObjC + WKWebView (macOS) → migrating to `pywebview` |
+| Native wrapper | `pywebview` (WKWebView on macOS, Edge WebView2 on Windows) |
 | Download engine | `yt-dlp` |
 | Media processing | `ffmpeg` + `ffprobe` |
 | Job lifecycle | `JobManager` class in `job_manager.py` |
@@ -63,7 +63,7 @@ See `docs/ROADMAP.md` for the phased plan with concrete tasks and acceptance cri
 .
 ├── app.py                  # Flask app, HTTP routes, entry point
 ├── job_manager.py          # JobManager class, job lifecycle, state machine
-├── native.py               # PyObjC wrapper for macOS .app (will be replaced in Phase A3)
+├── native.py               # pywebview desktop wrapper for the local Flask app
 ├── reclip.sh               # Local dev launcher (Mac/Linux)
 ├── build-macos-app.sh      # macOS .app bundling script
 ├── release-macos.sh        # macOS release packaging
@@ -260,14 +260,14 @@ Used for the conversion presets in Phase A2.
 
 ---
 
-## 11. Migration Notes — pywebview (Phase A3)
+## 11. pywebview Notes — Phase A3
 
-When the time comes to swap PyObjC for pywebview:
+The native wrapper has been promoted to pywebview:
 
 - `pywebview` works on macOS (uses WKWebView under the hood), Windows (uses Edge WebView2), Linux (uses GTK/QT)
 - The existing Flask app keeps running unchanged — pywebview just opens a window pointing at `localhost:8899`
-- Replace `native.py` content; keep the same public interface so callers don't change
-- The `build-macos-app.sh` flow may need PyInstaller spec updates to include pywebview's bootstrap
+- Keep `native.py` as the public wrapper entry point so callers don't change
+- The `build-macos-app.sh` flow collects pywebview for PyInstaller
 - Add a `build-windows.ps1` (or similar) for Windows packaging
 - Test on a real Windows 10/11 machine before declaring Phase A3 done — VM is fine, but it must be a real test, not "it should work"
 
