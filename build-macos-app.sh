@@ -42,28 +42,40 @@ if [ ! -f "$APP_ICON" ]; then
     exit 1
 fi
 
-# --- bgutil POT provider bundle (Node + JS generate_once.js) -----------------
-# Bundled into Resources/bin/node and Resources/bgutil-server/ so yt-dlp can
-# bypass YouTube's bot check via Brainicism/bgutil-ytdlp-pot-provider in
-# script mode. Cached under .build-cache/ to keep rebuilds fast.
+# --- bgutil POT provider bundle (Bun runtime + bundled JS) -------------------
+# We ship Bun (the Node-compatible JS runtime) renamed as `node`, plus a single
+# Bun-bundled generate_once.js. This replaces the previous setup that shipped a
+# 85MB Node runtime alongside a 55MB node_modules tree (~140MB total) with a
+# ~60MB Bun binary plus a ~6MB self-contained bundle — about a 70MB net saving.
+#
+# Bun-as-node is preferred over `bun build --compile` here because yt-dlp also
+# invokes the JS runtime for n-signature/EJS challenges (not just bgutil), and
+# a compiled bgutil-pot binary would mishandle those. Bun is Node-API
+# compatible, so the bgutil plugin and yt-dlp's own runtime path both work.
 
-NODE_VERSION="22.20.0"
+BUN_VERSION="1.3.14"
 BGUTIL_REF="1.3.1"
 CACHE_DIR="$(pwd)/.build-cache"
-NODE_DIR="${CACHE_DIR}/node-v${NODE_VERSION}-darwin-arm64"
-NODE_BIN="${NODE_DIR}/bin/node"
+BUN_DIR="${CACHE_DIR}/bun-v${BUN_VERSION}"
+BUN_BIN="${BUN_DIR}/bun"
 BGUTIL_SRC="${CACHE_DIR}/bgutil-ytdlp-pot-provider"
-BGUTIL_SERVER_BUILT="${BGUTIL_SRC}/server/build/generate_once.js"
+BGUTIL_BUNDLED_JS="${BGUTIL_SRC}/server/build-bundled/generate_once.js"
 
 mkdir -p "${CACHE_DIR}"
 
-if [ ! -x "${NODE_BIN}" ]; then
-    echo "Downloading Node.js v${NODE_VERSION} (arm64) ..."
-    curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-darwin-arm64.tar.gz" \
-        -o "${CACHE_DIR}/node.tar.gz"
-    rm -rf "${NODE_DIR}"
-    tar -xzf "${CACHE_DIR}/node.tar.gz" -C "${CACHE_DIR}"
-    rm -f "${CACHE_DIR}/node.tar.gz"
+if [ ! -x "${BUN_BIN}" ]; then
+    echo "Downloading Bun v${BUN_VERSION} (darwin-aarch64) ..."
+    curl -fsSL \
+        "https://github.com/oven-sh/bun/releases/download/bun-v${BUN_VERSION}/bun-darwin-aarch64.zip" \
+        -o "${CACHE_DIR}/bun.zip"
+    rm -rf "${BUN_DIR}"
+    mkdir -p "${BUN_DIR}"
+    unzip -q "${CACHE_DIR}/bun.zip" -d "${BUN_DIR}"
+    # Zip ships a `bun-darwin-aarch64/bun` entry; flatten it.
+    mv "${BUN_DIR}/bun-darwin-aarch64/bun" "${BUN_BIN}"
+    rmdir "${BUN_DIR}/bun-darwin-aarch64"
+    chmod +x "${BUN_BIN}"
+    rm -f "${CACHE_DIR}/bun.zip"
 fi
 
 if [ ! -d "${BGUTIL_SRC}" ]; then
@@ -72,14 +84,32 @@ if [ ! -d "${BGUTIL_SRC}" ]; then
         https://github.com/Brainicism/bgutil-ytdlp-pot-provider.git "${BGUTIL_SRC}"
 fi
 
-if [ ! -f "${BGUTIL_SERVER_BUILT}" ]; then
-    echo "Building bgutil server with bundled node ..."
+if [ ! -f "${BGUTIL_BUNDLED_JS}" ]; then
+    echo "Bundling bgutil generate_once.js with Bun v${BUN_VERSION} ..."
     pushd "${BGUTIL_SRC}/server" >/dev/null
-    # First install with devDeps so typescript is available, compile, then
-    # prune to production deps so the bundled node_modules stays slim.
-    PATH="${NODE_DIR}/bin:${PATH}" "${NODE_DIR}/bin/npm" ci --no-audit --no-fund
-    PATH="${NODE_DIR}/bin:${PATH}" "${NODE_DIR}/bin/npx" tsc
-    PATH="${NODE_DIR}/bin:${PATH}" "${NODE_DIR}/bin/npm" prune --omit=dev --no-audit --no-fund
+
+    "${BUN_BIN}" install --silent
+
+    # Drop canvas: it ships a 10MB+ native addon (libcairo/pango), but jsdom's
+    # canvas integration is an optional peer dep — the POT flow only triggers
+    # a `getContext()` warning, never an actual failure. Verified end-to-end
+    # with --bypass-cache against live YouTube. `bun remove` alone leaves the
+    # canvas directory in node_modules, so we also rm it on disk; otherwise
+    # Bun's bundler resolves it and emits a 700KB canvas-*.node asset.
+    "${BUN_BIN}" remove canvas --silent || true
+    rm -rf node_modules/canvas
+
+    # Drop the TypeScript-only commander shim in types/commander.d.ts that
+    # remaps `commander` → `@commander-js/extra-typings`. Bun's bundler honors
+    # tsconfig.json paths so the shim trips up `bun build`, even though it has
+    # no runtime effect.
+    rm -f types/commander.d.ts
+
+    mkdir -p build-bundled
+    "${BUN_BIN}" build src/generate_once.ts \
+        --target=bun --minify \
+        --outdir=build-bundled
+
     popd >/dev/null
 fi
 
@@ -112,6 +142,21 @@ pyinstaller_args=(
     --collect-all webview
     --collect-data certifi
     --hidden-import webview
+    # Trim Python stdlib modules that PyInstaller pulls in by default but
+    # ReClip never imports. Each saves a few hundred KB to a few MB.
+    # NOTE: do not exclude `distutils` — PyInstaller's hook-distutils.py
+    # aliases it as part of setuptools shim handling, and excluding it makes
+    # the build crash before bundling. Same for `xml.dom`, which lxml-ish
+    # hooks touch indirectly.
+    --exclude-module tkinter
+    --exclude-module _tkinter
+    --exclude-module turtle
+    --exclude-module turtledemo
+    --exclude-module test
+    --exclude-module unittest
+    --exclude-module pydoc_data
+    --exclude-module lib2to3
+    --exclude-module xmlrpc
 )
 
 if [ -n "$FFPROBE_BIN" ]; then
@@ -120,37 +165,39 @@ fi
 
 python -m PyInstaller "${pyinstaller_args[@]}" native.py
 
-# --- Embed Node + bgutil-server into the bundle ------------------------------
+# --- Embed Bun (as `node`) + bundled generate_once.js into the bundle --------
 APP_RESOURCES="dist/ReClip.app/Contents/Resources"
-
-echo "Embedding Node ${NODE_VERSION} into app bundle ..."
-mkdir -p "${APP_RESOURCES}/bin"
-cp "${NODE_BIN}" "${APP_RESOURCES}/bin/node"
-chmod +x "${APP_RESOURCES}/bin/node"
-
-echo "Embedding bgutil-server into app bundle ..."
 BGUTIL_DEST="${APP_RESOURCES}/bgutil-server"
+
+echo "Embedding Bun runtime + bundled generate_once.js ..."
 remove_build_path "${BGUTIL_DEST}"
-mkdir -p "${BGUTIL_DEST}"
-cp -R "${BGUTIL_SRC}/server/build" "${BGUTIL_DEST}/build"
-cp -R "${BGUTIL_SRC}/server/node_modules" "${BGUTIL_DEST}/node_modules"
-cp "${BGUTIL_SRC}/server/package.json" "${BGUTIL_DEST}/package.json"
+mkdir -p "${BGUTIL_DEST}/build"
 
-# Slim the bundle: strip Node debug symbols (~20MB) and prune dev-only
-# artefacts from node_modules (~5–10MB). LICENSE files are intentionally
-# kept for license compliance.
-echo "Stripping debug symbols from Node binary ..."
-strip -x "${APP_RESOURCES}/bin/node"
+# Bun runs both the bgutil generate_once.js bundle and any other JS that
+# yt-dlp's n-signature/EJS fallback wants to execute. Bun is Node-API
+# compatible for both cases.
+cp "${BUN_BIN}" "${BGUTIL_DEST}/bun"
+chmod +x "${BGUTIL_DEST}/bun"
 
-echo "Pruning bgutil node_modules of dev-only files ..."
-find "${BGUTIL_DEST}/node_modules" -type f \
-    \( -name "*.d.ts" -o -name "*.d.ts.map" -o -name "*.js.map" \) \
-    -delete 2>/dev/null || true
-find "${BGUTIL_DEST}/node_modules" -type d \
-    \( -name "test" -o -name "tests" -o -name "__tests__" -o \
-       -name "docs" -o -name "doc" -o -name "examples" -o \
-       -name ".github" \) \
-    -exec rm -rf {} + 2>/dev/null || true
+# Self-contained ~6MB ESM bundle with all of bgutil's JS deps inlined. Lives
+# at the path the bgutil plugin expects (server_home/build/generate_once.js).
+cp "${BGUTIL_BUNDLED_JS}" "${BGUTIL_DEST}/build/generate_once.js"
+
+# Shell shim named `node` so the bgutil plugin's version gate
+# (`node --version` parsed against `^v(\S+)`) passes — Bun renamed to `node`
+# refuses a bare `--version` invocation and demands a script, which fails
+# that gate. The shim emits a Node-shaped version string and otherwise
+# forwards every other invocation to Bun verbatim.
+cat > "${BGUTIL_DEST}/node" <<'SHIM'
+#!/bin/sh
+set -e
+if [ "$#" -eq 1 ] && [ "$1" = "--version" ]; then
+    echo "v22.0.0"
+    exit 0
+fi
+exec "$(cd "$(dirname "$0")" && pwd)/bun" "$@"
+SHIM
+chmod +x "${BGUTIL_DEST}/node"
 
 # Re-sign the bundle (ad-hoc) — required after adding files post-PyInstaller,
 # otherwise the code signature seal becomes invalid.

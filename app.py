@@ -50,16 +50,20 @@ def _find_bundled_bin_dir():
 
 
 def _find_bgutil_server_dir():
-    # bgutil-ytdlp-pot-provider script-mode: needs ./build/generate_once.js + node_modules.
+    # Bundled layout: bgutil-server/{node (bun renamed), build/generate_once.js (bun-bundled JS)}.
     for root in _runtime_roots():
         candidate = os.path.join(root, "bgutil-server")
-        if os.path.isfile(os.path.join(candidate, "build", "generate_once.js")):
+        if os.path.isfile(os.path.join(candidate, "build", "generate_once.js")) \
+                and os.path.isfile(os.path.join(candidate, "node")):
             return candidate
     return None
 
 
 BUNDLED_BIN_DIR = _find_bundled_bin_dir()
 BGUTIL_SERVER_DIR = _find_bgutil_server_dir()
+BGUTIL_NODE_PATH = (
+    os.path.join(BGUTIL_SERVER_DIR, "node") if BGUTIL_SERVER_DIR else None
+)
 
 if os.path.isdir(BUNDLED_BIN_DIR):
     os.environ["PATH"] = BUNDLED_BIN_DIR + os.pathsep + os.environ.get("PATH", "")
@@ -315,10 +319,11 @@ def _yt_dlp_options(_browser=None, **extra):
             "youtubepot-bgutilscript", {"server_home": [BGUTIL_SERVER_DIR]}
         )
         opts["extractor_args"].setdefault("youtube", {"player_client": ["mweb"]})
-        # yt-dlp's signature/n-challenge solver runs in a JS runtime; default
-        # is Deno, but we ship Node alongside the bgutil server. Enable node
-        # explicitly so EJS scripts (from yt-dlp-ejs python package) run.
-        opts.setdefault("js_runtimes", {"node": {}})
+        # We ship Bun renamed as `node` inside bgutil-server/. Point yt-dlp at
+        # it explicitly so neither the bgutil plugin's `node generate_once.js`
+        # call nor yt-dlp's own n-signature/EJS fallback path picks up a
+        # system Node (which may be missing on a clean user machine).
+        opts.setdefault("js_runtimes", {"node": {"path": BGUTIL_NODE_PATH}})
     opts.update(extra)
     return opts
 
