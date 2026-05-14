@@ -70,7 +70,7 @@ this app only:
 xattr -dr com.apple.quarantine /Applications/ReClip.app
 ```
 
-### Run locally in a browser
+### Run locally
 
 ```bash
 brew install yt-dlp ffmpeg    # or apt install ffmpeg && pip install yt-dlp
@@ -79,7 +79,13 @@ cd ReClip
 ./reclip.sh
 ```
 
-Open **http://localhost:8899**.
+ReClip opens in a native desktop window. For browser/self-hosted mode, run:
+
+```bash
+RECLIP_SERVER_ONLY=1 ./reclip.sh
+```
+
+Then open **http://localhost:8899**.
 
 ### Build your own macOS app
 

@@ -771,7 +771,33 @@ def download_file(job_id):
     return send_file(job["file"], as_attachment=True, download_name=job["filename"])
 
 
-if __name__ == "__main__":
+def _truthy_env(name):
+    """Return True when an environment flag is set to a truthy value."""
+    return os.environ.get(name, "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _should_run_server_only(host):
+    """Return True when ReClip should expose Flask without a native window."""
+    return _truthy_env("RECLIP_SERVER_ONLY") or host not in {
+        "127.0.0.1",
+        "localhost",
+        "::1",
+    }
+
+
+def main():
+    """Start ReClip in native desktop mode unless server-only mode is requested."""
     port = int(os.environ.get("PORT", 8899))
     host = os.environ.get("HOST", "127.0.0.1")
-    app.run(host=host, port=port)
+
+    if _should_run_server_only(host):
+        app.run(host=host, port=port)
+        return
+
+    from native import main as native_main
+
+    native_main()
+
+
+if __name__ == "__main__":
+    main()

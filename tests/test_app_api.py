@@ -1,6 +1,8 @@
 import io
 import os
 import json
+import sys
+import types
 
 import app as reclip_app
 from job_manager import JobManager
@@ -65,6 +67,60 @@ def test_source_run_keeps_browser_cookie_fallbacks_on_macos(monkeypatch):
     monkeypatch.setattr(reclip_app.sys, "platform", "darwin")
 
     assert reclip_app._browser_candidates() == ["safari", "chrome", "firefox", None]
+
+
+def test_main_launches_native_window_by_default(monkeypatch):
+    calls = []
+
+    monkeypatch.delenv("HOST", raising=False)
+    monkeypatch.delenv("PORT", raising=False)
+    monkeypatch.delenv("RECLIP_SERVER_ONLY", raising=False)
+    monkeypatch.setitem(
+        sys.modules,
+        "native",
+        types.SimpleNamespace(main=lambda: calls.append("native")),
+    )
+    monkeypatch.setattr(reclip_app.app, "run", lambda **kwargs: calls.append(("run", kwargs)))
+
+    reclip_app.main()
+
+    assert calls == ["native"]
+
+
+def test_main_keeps_server_only_mode_for_non_loopback_host(monkeypatch):
+    calls = []
+
+    monkeypatch.setenv("HOST", "0.0.0.0")
+    monkeypatch.setenv("PORT", "8899")
+    monkeypatch.delenv("RECLIP_SERVER_ONLY", raising=False)
+    monkeypatch.setitem(
+        sys.modules,
+        "native",
+        types.SimpleNamespace(main=lambda: calls.append("native")),
+    )
+    monkeypatch.setattr(reclip_app.app, "run", lambda **kwargs: calls.append(("run", kwargs)))
+
+    reclip_app.main()
+
+    assert calls == [("run", {"host": "0.0.0.0", "port": 8899})]
+
+
+def test_main_respects_explicit_server_only_flag(monkeypatch):
+    calls = []
+
+    monkeypatch.delenv("HOST", raising=False)
+    monkeypatch.setenv("PORT", "8899")
+    monkeypatch.setenv("RECLIP_SERVER_ONLY", "1")
+    monkeypatch.setitem(
+        sys.modules,
+        "native",
+        types.SimpleNamespace(main=lambda: calls.append("native")),
+    )
+    monkeypatch.setattr(reclip_app.app, "run", lambda **kwargs: calls.append(("run", kwargs)))
+
+    reclip_app.main()
+
+    assert calls == [("run", {"host": "127.0.0.1", "port": 8899})]
 
 
 def test_info_returns_heights_with_labels_and_size_estimates(tmp_path, monkeypatch):
@@ -228,6 +284,36 @@ def test_select_folder_cancel_keeps_current_dir(tmp_path, monkeypatch):
 
     assert res.status_code == 200
     assert res.get_json() == {"cancelled": True, "download_dir": str(tmp_path)}
+
+
+def test_open_folder_uses_configured_download_dir(tmp_path, monkeypatch):
+    client = make_client(tmp_path, monkeypatch)
+    calls = []
+
+    monkeypatch.setattr(reclip_app.subprocess, "Popen", lambda args: calls.append(args))
+
+    res = client.post("/api/open-folder")
+
+    assert res.status_code == 200
+    assert res.get_json() == {"ok": True}
+    assert calls == [["open", str(tmp_path)]]
+
+
+def test_reveal_file_uses_finder_reveal_for_completed_job(tmp_path, monkeypatch):
+    client = make_client(tmp_path, monkeypatch)
+    file_path = tmp_path / "Demo.mp4"
+    file_path.write_bytes(b"demo")
+    calls = []
+
+    job_id = reclip_app.jobs.create("https://example.com/video", "Demo")
+    assert reclip_app.jobs.mark_done(job_id, str(file_path), "Demo.mp4") is True
+    monkeypatch.setattr(reclip_app.subprocess, "Popen", lambda args: calls.append(args))
+
+    res = client.post(f"/api/reveal/{job_id}")
+
+    assert res.status_code == 200
+    assert res.get_json() == {"ok": True}
+    assert calls == [["open", "-R", str(file_path)]]
 
 
 def test_run_download_moves_file_to_configured_dir_and_keeps_it_after_prune(tmp_path, monkeypatch):

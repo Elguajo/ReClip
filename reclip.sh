@@ -38,13 +38,17 @@ else
     pip install -q -r requirements.txt
 fi
 
-PORT="${PORT:-8899}"
-export PORT
-
 export PATH="$PWD/venv/bin:$PATH"
 
 echo ""
-echo "  ReClip is running at http://localhost:$PORT"
+if [ -n "${RECLIP_SERVER_ONLY:-}" ]; then
+    PORT="${PORT:-8899}"
+    export PORT
+    echo "  ReClip is running at http://localhost:$PORT"
+else
+    echo "  ReClip desktop window is opening"
+    echo "  Preferred local URL: http://localhost:${PORT:-8899}"
+fi
 echo "  Downloads: ${RECLIP_DOWNLOAD_DIR:-saved app setting}"
 echo ""
 python3 app.py

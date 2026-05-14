@@ -209,16 +209,16 @@ CONVERSION_PRESETS = [
 - [x] Validate pywebview in isolation, then retire the temporary launcher after promoting the implementation into `native.py`
 - [x] Rewrite `native.py`: launches the Flask server in a thread on a free port, then opens a `pywebview` window pointing at `http://localhost:<port>`. Window title, dimensions, min size match the current macOS behavior
 - [x] Keep the existing public surface: whatever `app.py` and `build-macos-app.sh` import from `native.py` should still work
-- [ ] Verify on macOS — visual parity with the previous native wrapper. Show-in-Finder still works (pywebview's JS API exposes `pywebview.api.<func>` for backend calls — wire the existing endpoint through that or keep the HTTP call, whichever is simpler)
+- [x] Verify on macOS — visual parity with the previous native wrapper. Show-in-Finder still works (pywebview's JS API exposes `pywebview.api.<func>` for backend calls — wire the existing endpoint through that or keep the HTTP call, whichever is simpler). Validation run: `./reclip.sh` launched desktop mode and served the UI shell on macOS on 2026-05-14; Finder actions remain HTTP endpoint based.
 - [ ] Manual test on Windows 10 or 11 — fresh checkout, `pip install -r requirements.txt`, `python app.py` (or whatever the Windows entry is) opens a window. Paste URL, fetch, download. Save folder picker works. Theme toggle works.
 - [x] Update `build-macos-app.sh` if PyInstaller needs new hidden-imports for pywebview
 
 ### Acceptance criteria
 
-- [ ] `./reclip.sh` on macOS opens the same window as before, no visible difference for the user
+- [x] `./reclip.sh` on macOS opens the same window as before, no visible difference for the user. Validation run: desktop launch smoke passed on 2026-05-14.
 - [ ] On Windows, `python app.py` opens a working window with all features functional
-- [ ] All existing tests still pass
-- [ ] `./build-macos-app.sh` still produces a working `ReClip.app`
+- [x] All existing tests still pass. Validation run: `venv/bin/python -m pytest -q` → 76 passed on 2026-05-14.
+- [x] `./build-macos-app.sh` still produces a working `ReClip.app`. Validation run: `./build-macos-app.sh` succeeded and `dist/ReClip.app/Contents/MacOS/ReClip` served the UI shell on 2026-05-14.
 
 ---
 

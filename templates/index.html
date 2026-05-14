@@ -314,6 +314,10 @@
       animation: slideUp 0.36s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
+    .card.is-stable {
+      animation: none;
+    }
+
     @keyframes slideUp {
       from { opacity: 0; transform: translateY(12px); }
       to { opacity: 1; transform: translateY(0); }
@@ -397,9 +401,31 @@
     .card-main {
       min-width: 0;
       display: grid;
-      grid-template-rows: auto 1fr auto;
+      grid-template-rows: auto minmax(58px, 1fr) minmax(42px, auto);
       gap: 14px;
       padding-right: 26px;
+    }
+
+    .card-state {
+      min-width: 0;
+      min-height: 58px;
+      display: flex;
+      align-items: center;
+    }
+
+    .card-ready {
+      min-height: 0;
+    }
+
+    .card-ready .card-main {
+      grid-template-rows: auto auto;
+      align-content: start;
+      gap: 28px;
+    }
+
+    .card-ready .card-state {
+      display: none;
+      min-height: 0;
     }
 
     .remove-btn {
@@ -462,6 +488,22 @@
       color: var(--muted);
       font-size: 0.72rem;
       line-height: 1.5;
+    }
+
+    .card-status {
+      min-width: 0;
+      min-height: 24px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-status.done {
+      max-width: min(100%, 620px);
+      overflow: hidden;
+      font-family: 'DM Mono', monospace;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .card-error-msg { color: var(--error); }
@@ -542,7 +584,7 @@
 
     .card-dl-btn {
       min-width: 148px;
-      min-height: 38px;
+      min-height: 42px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -566,8 +608,20 @@
       width: 100%;
     }
 
+    .card-actions {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .card-actions .card-dl-btn {
+      min-width: 112px;
+      padding: 0 18px;
+    }
+
     .card-dl-btn.secondary {
-      min-width: 94px;
       border: 1.5px solid var(--card-border);
       background: transparent;
       color: var(--fg);
@@ -593,13 +647,14 @@
     .card-dl-btn.cancel {
       border: 1.5px solid var(--card-border);
       background: transparent;
-      color: var(--muted);
+      color: var(--fg);
+      letter-spacing: 0.08em;
     }
 
     .card-dl-btn.cancel:hover {
-      border-color: rgba(196, 61, 61, 0.35);
+      border-color: rgba(196, 61, 61, 0.42);
       color: var(--error);
-      background: transparent;
+      background: color-mix(in srgb, var(--error) 8%, transparent);
     }
 
     .done-actions,
@@ -613,13 +668,18 @@
 
     .progress-area {
       width: 100%;
+      min-height: 58px;
+      align-items: flex-start;
+      align-content: center;
+      flex-direction: column;
+      justify-content: center;
     }
 
     .progress-wrap {
       display: flex;
       align-items: center;
       gap: 10px;
-      width: min(100%, 430px);
+      width: min(100%, 680px);
       min-width: 220px;
     }
 
@@ -804,10 +864,12 @@
       }
       .done-actions,
       .retry-actions,
-      .progress-area {
+      .progress-area,
+      .card-actions {
         align-items: stretch;
         flex-direction: column;
       }
+      .card-actions .card-dl-btn,
       .card-dl-btn.secondary,
       .card-dl-btn.cancel {
         width: 100%;
@@ -1097,19 +1159,22 @@
       clearBtn.disabled = !cardData.some(c => !isActive(c));
 
       container.innerHTML = cardData.map(renderCard).join('');
+      cardData.forEach(c => { c.hasRendered = true; });
     }
 
     function renderCard(c) {
+      const stableClass = c.hasRendered ? ' is-stable' : '';
+
       if (c.status === 'loading') {
         return `
-          <article class="card" id="card-${c.uid}">
+          <article class="card${stableClass}" id="card-${c.uid}">
             <div class="card-thumb loading"></div>
             <div class="card-main">
               <div>
                 <div class="skeleton-line"></div>
                 <div class="card-meta"><div class="skeleton-line short"></div></div>
               </div>
-              <div></div>
+              <div class="card-state"></div>
               <div class="progress-area">
                 <span class="card-status downloading"><span class="spin"></span> Fetching metadata</span>
               </div>
@@ -1120,7 +1185,7 @@
 
       if (c.status === 'info-error') {
         return `
-          <article class="card card-error" id="card-${c.uid}">
+          <article class="card card-error${stableClass}" id="card-${c.uid}">
             <button class="remove-btn" title="Remove" aria-label="Remove" onclick="removeCard(${c.uid})">${trashIcon()}</button>
             <div class="card-thumb">
               <div class="card-error-icon">${errorIcon()}</div>
@@ -1130,7 +1195,7 @@
                 <h3 class="card-title" style="color:var(--error)">Could not fetch media</h3>
                 <div class="card-meta">${esc(sourceLabel(c.url))}</div>
               </div>
-              <div>
+              <div class="card-state">
                 <p class="card-error-msg">${esc(friendlyError(c.error || ''))}</p>
                 <p class="card-error-url">${esc(c.url)}</p>
               </div>
@@ -1143,8 +1208,9 @@
       }
 
       const active = isActive(c);
+      const readyClass = c.status === 'ready' ? ' card-ready' : '';
       return `
-        <article class="card" id="card-${c.uid}">
+        <article class="card${readyClass}${stableClass}" id="card-${c.uid}">
           <button class="remove-btn" title="${active ? 'Cancel before removing' : 'Remove'}" aria-label="Remove" ${active ? 'disabled' : `onclick="removeCard(${c.uid})"`}>${trashIcon()}</button>
           <div class="card-thumb">
             ${thumbHtml(c)}
@@ -1156,7 +1222,7 @@
               <h3 class="card-title">${esc(c.title || 'Untitled')}</h3>
               <div class="card-meta">${esc(sourceLabel(c.url))}${c.uploader ? ' &middot; ' + esc(c.uploader) : ''}</div>
             </div>
-            <div>${middleStateHtml(c)}</div>
+            <div class="card-state">${middleStateHtml(c)}</div>
             <div>${actionsHtml(c)}</div>
           </div>
         </article>
@@ -1228,12 +1294,16 @@
       }
 
       if (c.status === 'downloading' || c.status === 'converting') {
-        return `<button class="card-dl-btn cancel" onclick="cancelCard(${c.uid})">Cancel</button>`;
+        return `
+          <div class="card-actions">
+            <button class="card-dl-btn cancel" onclick="cancelCard(${c.uid})">Cancel</button>
+          </div>
+        `;
       }
 
       if (c.status === 'done') {
         return `
-          <div class="done-actions">
+          <div class="card-actions done-actions">
             <button class="card-dl-btn done" onclick="revealCard(${c.uid})">Show</button>
             <button class="card-dl-btn secondary" onclick="saveCard(${c.uid})">Save As</button>
           </div>
