@@ -3,45 +3,54 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ReClip — Free Media Downloader</title>
+  <title>ReClip - Media Downloader</title>
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #f4f1eb;
-      --fg: #3a3a38;
-      --accent: #e85d2a;
-      --accent-hover: #d04e1f;
-      --muted: #9c9889;
-      --card: #fff;
-      --card-border: #e2ded6;
+      --fg: #343432;
+      --accent: #f25a1d;
+      --accent-hover: #db4610;
+      --muted: #8c897f;
+      --soft: #b7b1a6;
+      --card: #fffefa;
+      --card-border: #ded9cf;
+      --field: #fffefa;
+      --thumb: #161616;
       --success: #2d8a4e;
       --error: #c43d3d;
       --radius: 14px;
-      --shimmer: linear-gradient(90deg, #ebe8e2 25%, #f0ede7 50%, #ebe8e2 75%);
+      --shadow: 0 18px 55px rgba(46, 38, 28, 0.08);
+      --shimmer: linear-gradient(90deg, #ebe8e2 25%, #f4f1eb 50%, #ebe8e2 75%);
     }
+
     [data-theme="dark"] {
-      --bg: #1a1a1d;
-      --fg: #e4e2dd;
-      --accent: #f0743a;
-      --accent-hover: #e85d2a;
-      --muted: #8f8f88;
-      --card: #2a2a2d;
-      --card-border: #3a3a3d;
+      --bg: #18181a;
+      --fg: #edeae4;
+      --accent: #ff6a2a;
+      --accent-hover: #f25a1d;
+      --muted: #9a968c;
+      --soft: #68645e;
+      --card: #232326;
+      --card-border: #36363a;
+      --field: #202023;
+      --thumb: #0e0e10;
       --success: #45a869;
       --error: #e05a5a;
-      --shimmer: linear-gradient(90deg, #2a2a2d 25%, #333336 50%, #2a2a2d 75%);
+      --shadow: 0 18px 55px rgba(0, 0, 0, 0.24);
+      --shimmer: linear-gradient(90deg, #29292d 25%, #333337 50%, #29292d 75%);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: 'DM Mono', monospace;
-      background: var(--bg);
-      color: var(--fg);
       min-height: 100vh;
       overflow-x: hidden;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'DM Mono', monospace;
       transition: background 0.3s, color 0.3s;
     }
 
@@ -49,47 +58,65 @@
       content: '';
       position: fixed;
       inset: 0;
-      opacity: 0.03;
+      z-index: -1;
+      opacity: 0.035;
       pointer-events: none;
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
       background-size: 128px;
     }
 
+    button,
+    textarea,
+    select,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+    }
+
     .page {
-      max-width: 620px;
+      width: min(1120px, calc(100% - 128px));
       margin: 0 auto;
-      padding: 60px 24px 80px;
+      padding: 54px 0 78px;
     }
 
     .header {
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
-      gap: 16px;
-      margin-bottom: 48px;
+      gap: 18px;
+      margin-bottom: 34px;
     }
-    .brand { margin-bottom: 0; }
+
     .brand h1 {
-      font-family: 'Instrument Serif', serif;
-      font-size: 4.2rem;
-      font-weight: 400;
-      letter-spacing: -0.03em;
-      line-height: 1;
       color: var(--fg);
+      font-family: 'Instrument Serif', serif;
+      font-size: 5.1rem;
+      font-weight: 400;
+      line-height: 0.95;
     }
-    .brand h1 em { font-style: italic; color: var(--accent); }
+
+    .brand h1 em {
+      color: var(--accent);
+      font-style: italic;
+    }
+
     .brand p {
       margin-top: 10px;
-      font-size: 0.78rem;
       color: var(--muted);
-      letter-spacing: 0.04em;
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
     }
+
     .header-actions {
       display: flex;
       gap: 8px;
       padding-top: 10px;
     }
+
     .icon-btn {
       width: 38px;
       height: 38px;
@@ -101,459 +128,757 @@
       background: var(--card);
       color: var(--fg);
       cursor: pointer;
-      transition: border-color 0.2s, color 0.2s, transform 0.1s;
+      transition: border-color 0.2s, color 0.2s, transform 0.1s, opacity 0.2s;
     }
+
     .icon-btn:hover {
       border-color: var(--accent);
       color: var(--accent);
     }
-    .icon-btn:active { transform: scale(0.97); }
+
+    .icon-btn:active { transform: scale(0.96); }
+    .icon-btn:disabled { cursor: not-allowed; opacity: 0.45; }
+
     .icon-btn svg {
       width: 18px;
       height: 18px;
     }
 
+    .composer {
+      display: grid;
+      gap: 14px;
+    }
+
     textarea {
       width: 100%;
-      padding: 18px 20px;
+      min-height: 132px;
+      padding: 22px 24px;
+      resize: vertical;
       border: 1.5px solid var(--card-border);
       border-radius: var(--radius);
-      background: var(--card);
-      color: var(--fg);
-      font-family: 'DM Mono', monospace;
-      font-size: 0.88rem;
       outline: none;
-      resize: none;
-      min-height: 56px;
+      background: var(--field);
+      color: var(--fg);
+      font-size: 0.86rem;
+      line-height: 1.6;
       transition: border-color 0.25s, box-shadow 0.25s;
-      margin-bottom: 6px;
     }
+
     textarea:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(232, 93, 42, 0.08);
-    }
-    textarea::placeholder { color: var(--muted); }
-
-    .hint {
-      font-size: 0.7rem;
-      color: var(--muted);
-      margin-bottom: 20px;
-      letter-spacing: 0.02em;
-    }
-    .save-location {
-      margin: 0 0 18px;
-      font-size: 0.66rem;
-      color: var(--muted);
-      word-break: break-all;
+      box-shadow: 0 0 0 4px rgba(242, 90, 29, 0.09);
     }
 
-    .controls {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 6px;
-      align-items: center;
-      flex-wrap: wrap;
+    textarea::placeholder { color: color-mix(in srgb, var(--muted) 42%, transparent); }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: 210px minmax(220px, 1fr);
+      gap: 14px;
+      align-items: stretch;
     }
-    .convert-select {
-      padding: 5px 26px 5px 10px;
-      border: 1.5px solid var(--card-border);
-      border-radius: 6px;
-      background-color: var(--card);
-      color: var(--fg);
-      font-family: 'DM Mono', monospace;
-      font-size: 0.65rem;
-      cursor: pointer;
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      appearance: none;
-      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'><path fill='none' stroke='%239c9889' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M1 1.5l5 5 5-5'/></svg>");
-      background-repeat: no-repeat;
-      background-position: right 9px center;
-      background-size: 8px;
-      transition: border-color 0.2s;
-    }
-    .convert-select:hover:not(:disabled) { border-color: var(--muted); }
-    .convert-select:focus { outline: none; border-color: var(--accent); }
-    .convert-select:disabled { cursor: not-allowed; opacity: 0.5; }
-    .keep-original {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      cursor: pointer;
-      user-select: none;
-      font-size: 0.62rem;
-      color: var(--muted);
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-    }
-    .keep-original input { cursor: pointer; margin: 0; }
-    .card-status.converting { color: var(--accent); }
+
     .pill-group {
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 52px;
+      padding: 5px;
       border: 1.5px solid var(--card-border);
-      border-radius: 10px;
-      overflow: hidden;
+      border-radius: 12px;
       background: var(--card);
     }
+
     .pill {
-      padding: 9px 18px;
-      font-family: 'DM Mono', monospace;
-      font-size: 0.76rem;
-      border: none;
+      border-radius: 9px;
       background: transparent;
       color: var(--muted);
       cursor: pointer;
-      transition: all 0.2s;
-      letter-spacing: 0.03em;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.76rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
+      transition: background 0.2s, color 0.2s;
     }
-    .pill.active { background: var(--fg); color: var(--bg); }
+
+    .pill.active {
+      background: var(--fg);
+      color: var(--bg);
+    }
+
     .pill:not(.active):hover { color: var(--fg); }
 
     .fetch-btn {
-      flex: 1;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 10px;
+      min-height: 52px;
+      border-radius: 12px;
       background: var(--accent);
       color: #fff;
+      cursor: pointer;
       font-family: 'DM Mono', monospace;
       font-size: 0.82rem;
       font-weight: 500;
-      cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
       letter-spacing: 0.04em;
       text-transform: uppercase;
+      transition: background 0.2s, transform 0.1s, opacity 0.2s;
     }
-    .fetch-btn:hover { background: var(--accent-hover); }
-    .fetch-btn:active { transform: scale(0.98); }
-    .fetch-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-    /* Cards */
-    .cards { margin-top: 24px; }
+    .fetch-btn:hover { background: var(--accent-hover); }
+    .fetch-btn:active { transform: scale(0.99); }
+    .fetch-btn:disabled { cursor: not-allowed; opacity: 0.52; transform: none; }
+
+    .composer-meta {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) auto;
+      gap: 18px;
+      align-items: start;
+      min-height: 24px;
+      color: var(--muted);
+      font-size: 0.68rem;
+      line-height: 1.5;
+    }
+
+    .hint {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .hint svg {
+      width: 13px;
+      height: 13px;
+      flex: 0 0 auto;
+    }
+
+    .save-location {
+      justify-self: end;
+      max-width: 420px;
+      word-break: break-word;
+      text-align: right;
+    }
+
+    .save-location strong {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .queue {
+      margin-top: 48px;
+    }
+
+    .queue-header {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .queue.has-items .queue-header { display: flex; }
+
+    .queue-title {
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .clear-btn {
+      background: transparent;
+      color: var(--accent);
+      cursor: pointer;
+      font-size: 0.7rem;
+      font-weight: 600;
+      transition: color 0.2s, opacity 0.2s;
+    }
+
+    .clear-btn:hover { color: var(--accent-hover); }
+    .clear-btn:disabled { cursor: not-allowed; opacity: 0.45; }
+
+    .cards {
+      display: grid;
+      gap: 14px;
+    }
 
     .card {
-      display: flex;
-      gap: 14px;
+      position: relative;
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      gap: 22px;
+      min-height: 154px;
+      padding: 22px;
       border: 1.5px solid var(--card-border);
       border-radius: var(--radius);
       background: var(--card);
-      padding: 14px;
-      margin-bottom: 10px;
-      animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: var(--shadow);
+      animation: slideUp 0.36s cubic-bezier(0.16, 1, 0.3, 1);
     }
+
     @keyframes slideUp {
       from { opacity: 0; transform: translateY(12px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    .card-thumb {
-      width: 120px;
-      min-width: 120px;
-      height: 80px;
-      border-radius: 8px;
-      overflow: hidden;
-      background: var(--card-border);
-      flex-shrink: 0;
-      position: relative;
+    .card.card-error {
+      border-color: rgba(196, 61, 61, 0.28);
+      background: color-mix(in srgb, var(--card) 94%, var(--error));
     }
+
+    .card-thumb {
+      position: relative;
+      min-height: 112px;
+      overflow: hidden;
+      border-radius: 10px;
+      background: linear-gradient(180deg, #282828 0%, var(--thumb) 100%);
+    }
+
     .card-thumb img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      min-height: 112px;
       display: block;
-    }
-    /* No-thumbnail icon */
-    .card-thumb .no-thumb {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--muted);
-    }
-    .card-thumb .no-thumb svg {
-      width: 28px;
-      height: 28px;
-      opacity: 0.5;
+      object-fit: cover;
     }
 
-    /* Shimmer skeleton for loading state */
+    .card-thumb::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(180deg, transparent 42%, rgba(0, 0, 0, 0.62));
+    }
+
     .card-thumb.loading {
       background: var(--shimmer);
       background-size: 200% 100%;
       animation: shimmer 1.5s infinite;
     }
-    .skeleton-line {
-      height: 12px;
-      border-radius: 4px;
-      background: var(--shimmer);
-      background-size: 200% 100%;
-      animation: shimmer 1.5s infinite;
-      margin-bottom: 6px;
-    }
-    .skeleton-line.short { width: 40%; height: 10px; }
-    .skeleton-line.medium { width: 75%; }
-    @keyframes shimmer {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
+
+    .no-thumb,
+    .card-error-icon {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255, 255, 255, 0.2);
     }
 
-    .card-body {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
+    .no-thumb svg,
+    .card-error-icon svg {
+      width: 32px;
+      height: 32px;
+      z-index: 1;
     }
+
+    .card-error-icon {
+      color: var(--error);
+      background: rgba(196, 61, 61, 0.08);
+    }
+
+    .thumb-badge,
+    .thumb-time {
+      position: absolute;
+      z-index: 2;
+      bottom: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 5px;
+      background: rgba(0, 0, 0, 0.58);
+      color: #fff;
+      font-size: 0.62rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      padding: 5px 7px;
+    }
+
+    .thumb-badge { left: 10px; }
+    .thumb-time { right: 10px; }
+
+    .card-main {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 14px;
+      padding-right: 26px;
+    }
+
+    .remove-btn {
+      position: absolute;
+      top: 22px;
+      right: 22px;
+      width: 28px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: color 0.2s, background 0.2s, opacity 0.2s;
+    }
+
+    .remove-btn:hover {
+      background: color-mix(in srgb, var(--card-border) 52%, transparent);
+      color: var(--error);
+    }
+
+    .remove-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.38;
+    }
+
+    .remove-btn svg {
+      width: 17px;
+      height: 17px;
+    }
+
     .card-title {
-      font-family: 'Instrument Serif', serif;
-      font-size: 1rem;
-      line-height: 1.3;
-      color: var(--fg);
-      margin-bottom: 2px;
+      max-width: 94%;
       overflow: hidden;
+      color: var(--fg);
+      font-family: 'Instrument Serif', serif;
+      font-size: 1.35rem;
+      font-weight: 400;
+      line-height: 1.18;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+
     .card-meta {
-      font-size: 0.68rem;
+      margin-top: 8px;
+      min-height: 16px;
       color: var(--muted);
-      letter-spacing: 0.03em;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.16em;
       text-transform: uppercase;
-      margin-bottom: 8px;
     }
 
-    .card-actions {
-      display: flex;
-      gap: 6px;
+    .card-error-msg,
+    .card-error-url,
+    .card-status {
+      color: var(--muted);
+      font-size: 0.72rem;
+      line-height: 1.5;
+    }
+
+    .card-error-msg { color: var(--error); }
+    .card-error-url { word-break: break-all; }
+
+    .card-status.downloading,
+    .card-status.converting { color: var(--accent); }
+    .card-status.done { color: var(--success); }
+    .card-status.error { color: var(--error); }
+
+    .card-controls {
+      display: grid;
+      grid-template-columns: minmax(160px, 1fr) minmax(190px, 260px) minmax(240px, 0.85fr);
+      gap: 10px;
       align-items: center;
-      flex-wrap: wrap;
+    }
+
+    .card-controls.audio {
+      grid-template-columns: minmax(180px, 1fr) minmax(220px, 0.55fr);
+    }
+
+    .select-wrap {
+      min-width: 0;
+    }
+
+    .quality-select,
+    .convert-select {
+      width: 100%;
+      min-height: 38px;
+      padding: 0 34px 0 13px;
+      border: 1.5px solid var(--card-border);
+      border-radius: 9px;
+      outline: none;
+      appearance: none;
+      background-color: var(--field);
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'><path fill='none' stroke='%238c897f' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M1 1.5l5 5 5-5'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 13px center;
+      background-size: 9px;
+      color: var(--fg);
+      cursor: pointer;
+      font-size: 0.72rem;
+      font-weight: 600;
+      transition: border-color 0.2s, opacity 0.2s;
+    }
+
+    .quality-select:hover:not(:disabled),
+    .convert-select:hover:not(:disabled) { border-color: var(--muted); }
+
+    .quality-select:focus,
+    .convert-select:focus { border-color: var(--accent); }
+
+    .quality-select:disabled,
+    .convert-select:disabled {
+      cursor: not-allowed;
+      opacity: 0.62;
+    }
+
+    .keep-original {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.63rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .keep-original input {
+      width: 14px;
+      height: 14px;
+      accent-color: var(--accent);
+      cursor: pointer;
     }
 
     .card-dl-btn {
-      padding: 6px 14px;
-      border: none;
-      border-radius: 7px;
-      background: var(--fg);
-      color: var(--bg);
-      font-family: 'DM Mono', monospace;
-      font-size: 0.7rem;
-      font-weight: 500;
+      min-width: 148px;
+      min-height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-radius: 9px;
+      background: var(--accent);
+      color: #fff;
       cursor: pointer;
-      transition: all 0.2s;
-      letter-spacing: 0.03em;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.13em;
       text-transform: uppercase;
+      transition: background 0.2s, transform 0.1s, opacity 0.2s;
     }
-    .card-dl-btn:hover { background: #2d2d2a; }
-    .card-dl-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .card-dl-btn.done { background: var(--success); color: #fff; }
-    .card-dl-btn.error { background: var(--error); color: #fff; }
+
+    .card-dl-btn:hover { background: var(--accent-hover); }
+    .card-dl-btn:active { transform: scale(0.98); }
+    .card-dl-btn:disabled { cursor: not-allowed; opacity: 0.45; transform: none; }
+
+    .card-controls > .card-dl-btn {
+      width: 100%;
+    }
+
+    .card-dl-btn.secondary {
+      min-width: 94px;
+      border: 1.5px solid var(--card-border);
+      background: transparent;
+      color: var(--fg);
+      letter-spacing: 0.08em;
+    }
+
+    .card-dl-btn.secondary:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: transparent;
+    }
+
+    .card-dl-btn.done {
+      background: var(--success);
+      color: #fff;
+    }
+
+    .card-dl-btn.error {
+      background: var(--error);
+      color: #fff;
+    }
+
     .card-dl-btn.cancel {
       border: 1.5px solid var(--card-border);
       background: transparent;
       color: var(--muted);
     }
+
     .card-dl-btn.cancel:hover {
       border-color: rgba(196, 61, 61, 0.35);
-      background: transparent;
       color: var(--error);
+      background: transparent;
     }
 
-    .card-status {
-      font-size: 0.68rem;
-      color: var(--muted);
+    .done-actions,
+    .retry-actions,
+    .progress-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
     }
-    .card-status.downloading { color: var(--accent); }
-    .card-status.done { color: var(--success); }
-    .card-status.error { color: var(--error); }
+
+    .progress-area {
+      width: 100%;
+    }
 
     .progress-wrap {
       display: flex;
       align-items: center;
-      gap: 8px;
-      width: 100%;
-      min-width: 180px;
+      gap: 10px;
+      width: min(100%, 430px);
+      min-width: 220px;
     }
+
     .progress-track {
       flex: 1;
-      height: 6px;
+      height: 7px;
       overflow: hidden;
       border-radius: 999px;
       background: var(--card-border);
     }
+
     .progress-fill {
-      height: 100%;
       width: 0%;
+      height: 100%;
       border-radius: inherit;
       background: var(--accent);
       transition: width 0.25s ease;
     }
+
     .progress-text {
-      min-width: 34px;
-      font-size: 0.66rem;
+      min-width: 38px;
       color: var(--muted);
+      font-size: 0.68rem;
       text-align: right;
     }
 
-    .quality-select {
-      padding: 5px 26px 5px 10px;
-      border: 1.5px solid var(--card-border);
-      border-radius: 6px;
-      background-color: var(--card);
-      color: var(--fg);
-      font-family: 'DM Mono', monospace;
-      font-size: 0.65rem;
-      cursor: pointer;
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      appearance: none;
-      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'><path fill='none' stroke='%239c9889' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M1 1.5l5 5 5-5'/></svg>");
-      background-repeat: no-repeat;
-      background-position: right 9px center;
-      background-size: 8px;
-      transition: border-color 0.2s;
-    }
-    .quality-select:hover:not(:disabled) { border-color: var(--muted); }
-    .quality-select:focus { outline: none; border-color: var(--accent); }
-    .quality-select:disabled { cursor: not-allowed; opacity: 0.6; }
-
-    /* Error card */
-    .card.card-error {
-      border-color: rgba(196, 61, 61, 0.2);
-      background: rgba(196, 61, 61, 0.03);
-    }
-    .card-error-icon {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(196, 61, 61, 0.08);
-      color: var(--error);
-    }
-    .card-error-icon svg {
-      width: 24px;
-      height: 24px;
-    }
-    .card-error-msg {
-      font-size: 0.72rem;
-      color: var(--error);
-      margin-top: 2px;
-      line-height: 1.4;
-    }
-    .card-error-url {
-      font-size: 0.65rem;
-      color: var(--muted);
-      word-break: break-all;
-      margin-top: 4px;
+    .skeleton-line {
+      height: 13px;
+      width: 72%;
+      border-radius: 999px;
+      background: var(--shimmer);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
     }
 
-    /* Download all bar */
-    .dl-all-bar {
-      display: flex;
-      gap: 10px;
-      margin-top: 16px;
+    .skeleton-line.short {
+      width: 42%;
+      height: 11px;
     }
-    .dl-all-btn {
-      flex: 1;
-      padding: 12px;
-      border: none;
-      border-radius: 10px;
-      background: var(--fg);
-      color: var(--bg);
-      font-family: 'DM Mono', monospace;
-      font-size: 0.82rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
     }
-    .dl-all-btn:hover { background: #2d2d2a; }
-    .dl-all-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
     .spin {
       display: inline-block;
-      width: 10px; height: 10px;
+      width: 11px;
+      height: 11px;
       border: 2px solid currentColor;
       border-right-color: transparent;
       border-radius: 50%;
-      animation: spin 0.6s linear infinite;
+      animation: spin 0.65s linear infinite;
       vertical-align: middle;
     }
+
     @keyframes spin { to { transform: rotate(360deg); } }
 
     .footer {
-      margin-top: 48px;
+      margin-top: 76px;
       text-align: center;
-      font-size: 0.68rem;
-      color: var(--muted);
-      letter-spacing: 0.05em;
+      color: color-mix(in srgb, var(--muted) 74%, transparent);
+      font-size: 0.74rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      line-height: 1.9;
       text-transform: uppercase;
-      line-height: 1.8;
     }
 
-    /* Mobile */
-    @media (max-width: 500px) {
-      .brand h1 { font-size: 3rem; }
-      .page { padding: 40px 16px 60px; }
-      .header { margin-bottom: 36px; }
-      .card { flex-direction: column; gap: 10px; }
-      .card-thumb {
-        width: 100%;
-        min-width: unset;
-        height: 160px;
+    .copyright {
+      margin-top: 28px;
+      color: color-mix(in srgb, var(--muted) 64%, transparent);
+      font-size: 0.64rem;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    @media (max-width: 860px) {
+      .page {
+        width: min(100% - 48px, 1120px);
+        padding: 38px 0 64px;
       }
-      .card-title { white-space: normal; }
-      .controls { flex-wrap: wrap; }
-      .fetch-btn { width: 100%; }
+      .brand h1 { font-size: 4.1rem; }
+      .header { margin-bottom: 28px; }
+      .control-grid,
+      .composer-meta {
+        grid-template-columns: 1fr;
+      }
+      .save-location {
+        justify-self: start;
+        text-align: left;
+      }
+      .card {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      .card-thumb,
+      .card-thumb img {
+        min-height: 190px;
+      }
+      .card-main {
+        padding-right: 0;
+      }
+      .remove-btn {
+        top: 18px;
+        right: 18px;
+        background: rgba(0, 0, 0, 0.24);
+        color: #fff;
+      }
+      .card-title {
+        max-width: 100%;
+        font-size: 1.22rem;
+        white-space: normal;
+      }
+      .card-controls,
+      .card-controls.audio {
+        grid-template-columns: 1fr;
+      }
+      .card-dl-btn {
+        width: 100%;
+      }
+      .progress-wrap {
+        min-width: 0;
+      }
+    }
+
+    @media (min-width: 861px) and (max-width: 1040px) {
+      .page {
+        width: min(100% - 96px, 1120px);
+      }
+      .card {
+        grid-template-columns: 220px minmax(0, 1fr);
+        gap: 18px;
+        padding: 18px;
+      }
+      .card-main {
+        padding-right: 22px;
+      }
+      .card-controls {
+        grid-template-columns: minmax(120px, 1fr) minmax(145px, 180px) minmax(170px, 0.9fr);
+        gap: 8px;
+      }
+      .card-controls.audio {
+        grid-template-columns: minmax(150px, 1fr) minmax(180px, 0.8fr);
+      }
+      .quality-select,
+      .convert-select,
+      .card-dl-btn {
+        min-width: 0;
+        font-size: 0.68rem;
+      }
+      .card-dl-btn {
+        letter-spacing: 0.11em;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .page {
+        width: min(100% - 32px, 1120px);
+      }
+      .brand h1 { font-size: 3.3rem; }
+      .header {
+        align-items: flex-start;
+      }
+      .header-actions {
+        flex-direction: column;
+      }
+      textarea {
+        min-height: 118px;
+        padding: 18px;
+      }
+      .queue-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .card {
+        padding: 16px;
+      }
+      .card-thumb,
+      .card-thumb img {
+        min-height: 158px;
+      }
+      .done-actions,
+      .retry-actions,
+      .progress-area {
+        align-items: stretch;
+        flex-direction: column;
+      }
+      .card-dl-btn.secondary,
+      .card-dl-btn.cancel {
+        width: 100%;
+      }
     }
   </style>
 </head>
 <body>
   <div class="page">
-    <div class="header">
+    <header class="header">
       <div class="brand">
         <h1>Re<em>Clip</em></h1>
-        <p>Free media downloader</p>
+        <p>Self-hosted media downloader</p>
       </div>
       <div class="header-actions">
-        <button class="icon-btn" title="Choose downloads folder" onclick="selectFolder()">
+        <button class="icon-btn" title="Choose downloads folder" aria-label="Choose downloads folder" onclick="selectFolder()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
         </button>
-        <button class="icon-btn" title="Toggle theme" onclick="toggleTheme()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <button class="icon-btn" title="Toggle theme" aria-label="Toggle theme" onclick="toggleTheme()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>
         </button>
       </div>
-    </div>
+    </header>
 
-    <textarea id="urls" placeholder="Paste one or more URLs..." rows="2"></textarea>
-    <p class="hint">Multiple links? Separate with spaces, commas, or newlines.</p>
-    <p class="save-location" id="saveLocation"></p>
+    <main>
+      <section class="composer" aria-label="Fetch media">
+        <textarea id="urls" placeholder="https://www.youtube.com/watch?v=..." rows="3"></textarea>
+        <div class="control-grid">
+          <div class="pill-group" role="tablist" aria-label="Download format">
+            <button class="pill active" data-format="video" role="tab" aria-selected="true" onclick="setFormat(this)">Video</button>
+            <button class="pill" data-format="audio" role="tab" aria-selected="false" onclick="setFormat(this)">Audio</button>
+          </div>
+          <button class="fetch-btn" id="goBtn" onclick="go()">Fetch Content</button>
+        </div>
+        <div class="composer-meta">
+          <p class="hint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+            Separate multiple links with spaces, commas, or newlines
+          </p>
+          <p class="save-location" id="saveLocation"></p>
+        </div>
+      </section>
 
-    <div class="controls">
-      <div class="pill-group">
-        <button class="pill active" data-format="video" onclick="setFormat(this)">Video</button>
-        <button class="pill" data-format="audio" onclick="setFormat(this)">Audio</button>
-      </div>
-      <button class="fetch-btn" id="goBtn" onclick="go()">Fetch</button>
-    </div>
+      <section class="queue" id="queue" aria-live="polite">
+        <div class="queue-header">
+          <h2 class="queue-title" id="queueTitle">Processing Queue (0)</h2>
+          <button class="clear-btn" id="clearBtn" onclick="clearQueue()">Clear All</button>
+        </div>
+        <div id="cards" class="cards"></div>
+      </section>
+    </main>
 
-    <div id="cards" class="cards"></div>
-
-    <div class="footer">
+    <footer class="footer">
       YouTube &middot; TikTok &middot; Instagram &middot; Twitter/X &middot; Reddit &middot; Facebook<br>
       Vimeo &middot; Twitch &middot; Dailymotion &middot; SoundCloud &middot; Loom &middot; Streamable<br>
       Pinterest &middot; Tumblr &middot; Threads &middot; LinkedIn &middot; 1000+ more
-    </div>
+      <div class="copyright">&copy; 2026 ReClip Media Engine. All rights reserved.</div>
+    </footer>
   </div>
 
   <script>
     let currentFormat = 'video';
     let cardData = [];
     let downloadDir = '';
+    let nextCardId = 1;
     let convertPresets = [{ id: 'none', label: 'No conversion (keep original)', ext: null }];
+
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+    window.addEventListener('load', () => window.scrollTo(0, 0));
 
     function initTheme() {
       const saved = localStorage.getItem('reclip-theme');
@@ -576,10 +901,15 @@
         const res = await fetch('/api/config');
         const data = await res.json();
         downloadDir = data.download_dir || '';
-        document.getElementById('saveLocation').textContent = downloadDir ? `Saving to ${downloadDir}` : '';
+        setSaveLocation();
       } catch {
         document.getElementById('saveLocation').textContent = '';
       }
+    }
+
+    function setSaveLocation() {
+      const el = document.getElementById('saveLocation');
+      el.innerHTML = downloadDir ? `<strong>Output:</strong> ${esc(downloadDir)}` : '';
     }
 
     async function loadPresets() {
@@ -590,7 +920,7 @@
           convertPresets = data.presets;
         }
       } catch {
-        // keep the fallback `none` preset
+        // Keep the fallback `none` preset if the endpoint is unavailable.
       }
     }
 
@@ -599,15 +929,19 @@
       const data = await res.json();
       if (data.download_dir) {
         downloadDir = data.download_dir;
-        document.getElementById('saveLocation').textContent = `Saving to ${downloadDir}`;
+        setSaveLocation();
       }
     }
 
     function setFormat(btn) {
-      document.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.pill').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
       btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
       currentFormat = btn.dataset.format;
-      cardData.forEach((_, i) => renderCard(i));
+      renderQueue();
     }
 
     function parseUrls(text) {
@@ -631,7 +965,7 @@
 
     function fmtEta(s) {
       if (!s) return '';
-      return ` · ${fmtDur(s)} left`;
+      return ` - ${fmtDur(s)} left`;
     }
 
     function formatSize(bytes) {
@@ -662,9 +996,45 @@
       if (err.includes('HTTP Error 404')) return 'Video not found';
       if (err.includes('copyright')) return 'Video blocked due to copyright';
       if (err.includes('geo')) return 'Video not available in your region';
-      if (err.includes('timed out') || err.includes('Timed out')) return 'Request timed out — try again';
-      if (err.includes('network') || err.includes('Network')) return 'Network error — check your connection';
-      return err.length > 80 ? err.slice(0, 80) + '...' : err;
+      if (err.includes('timed out') || err.includes('Timed out')) return 'Request timed out - try again';
+      if (err.includes('network') || err.includes('Network')) return 'Network error - check your connection';
+      return err.length > 90 ? err.slice(0, 90) + '...' : err;
+    }
+
+    function sourceLabel(url) {
+      try {
+        const host = new URL(url).hostname.replace(/^www\./, '');
+        return host.split('.')[0].toUpperCase();
+      } catch {
+        return 'MEDIA';
+      }
+    }
+
+    function thumbBadge(c) {
+      if (currentFormat === 'audio') return 'AUDIO';
+      if (c.selectedHeight) return `${c.selectedHeight}P`;
+      const formats = c.formats || [];
+      if (formats.length && formats[0].height) {
+        if (formats[0].height >= 4320) return '8K UHD';
+        if (formats[0].height >= 2160) return '4K UHD';
+        if (formats[0].height >= 720) return 'HD';
+      }
+      return 'VIDEO';
+    }
+
+    function isActive(c) {
+      return c && (c.status === 'downloading' || c.status === 'converting');
+    }
+
+    function findCard(uid) {
+      return cardData.find(c => c.uid === uid);
+    }
+
+    function updateCard(uid, patch) {
+      const idx = cardData.findIndex(c => c.uid === uid);
+      if (idx === -1) return null;
+      cardData[idx] = { ...cardData[idx], ...patch };
+      return cardData[idx];
     }
 
     document.getElementById('urls').addEventListener('keydown', e => {
@@ -676,31 +1046,25 @@
       if (!urls.length) return;
 
       const btn = document.getElementById('goBtn');
-      const container = document.getElementById('cards');
       btn.disabled = true;
       btn.textContent = 'Loading...';
-      container.innerHTML = '';
-      cardData = [];
 
-      urls.forEach((url) => {
-        const idx = cardData.length;
-        cardData.push({ url, status: 'loading' });
-        renderCard(idx);
-      });
+      const queued = urls.map(url => ({ uid: nextCardId++, url, status: 'loading' }));
+      cardData = queued;
+      renderQueue();
 
-      await Promise.all(urls.map(async (url, idx) => {
+      await Promise.all(queued.map(async (item) => {
         try {
           const res = await fetch('/api/info', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url }),
+            body: JSON.stringify({ url: item.url }),
           });
           const data = await res.json();
           if (data.error) {
-            cardData[idx] = { ...cardData[idx], status: 'info-error', error: data.error };
+            updateCard(item.uid, { status: 'info-error', error: data.error });
           } else {
-            cardData[idx] = {
-              ...cardData[idx],
+            updateCard(item.uid, {
               status: 'ready',
               title: data.title || '',
               thumbnail: data.thumbnail || '',
@@ -710,287 +1074,387 @@
               selectedHeight: null,
               convertPreset: 'none',
               keepOriginal: false,
-            };
+            });
           }
         } catch (err) {
-          cardData[idx] = { ...cardData[idx], status: 'info-error', error: err.message };
+          updateCard(item.uid, { status: 'info-error', error: err.message });
         }
-        renderCard(idx);
+        renderQueue();
       }));
 
-      if (cardData.filter(c => c.status === 'ready').length > 1) {
-        renderDownloadAll();
-      }
-
       btn.disabled = false;
-      btn.textContent = 'Fetch';
+      btn.textContent = 'Fetch Content';
     }
 
-    function renderCard(idx) {
-      const c = cardData[idx];
-      let el = document.getElementById(`card-${idx}`);
-      if (!el) {
-        el = document.createElement('div');
-        el.id = `card-${idx}`;
-        el.className = 'card';
-        document.getElementById('cards').appendChild(el);
-      }
+    function renderQueue() {
+      const queue = document.getElementById('queue');
+      const title = document.getElementById('queueTitle');
+      const clearBtn = document.getElementById('clearBtn');
+      const container = document.getElementById('cards');
 
-      // Loading skeleton
+      queue.classList.toggle('has-items', cardData.length > 0);
+      title.textContent = `Processing Queue (${cardData.length})`;
+      clearBtn.disabled = !cardData.some(c => !isActive(c));
+
+      container.innerHTML = cardData.map(renderCard).join('');
+    }
+
+    function renderCard(c) {
       if (c.status === 'loading') {
-        el.className = 'card';
-        el.innerHTML = `
-          <div class="card-thumb loading"></div>
-          <div class="card-body">
-            <div class="skeleton-line medium"></div>
-            <div class="skeleton-line short"></div>
-          </div>
-        `;
-        return;
-      }
-
-      // Error state
-      if (c.status === 'info-error') {
-        el.className = 'card card-error';
-        el.innerHTML = `
-          <div class="card-thumb">
-            <div class="card-error-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        return `
+          <article class="card" id="card-${c.uid}">
+            <div class="card-thumb loading"></div>
+            <div class="card-main">
+              <div>
+                <div class="skeleton-line"></div>
+                <div class="card-meta"><div class="skeleton-line short"></div></div>
+              </div>
+              <div></div>
+              <div class="progress-area">
+                <span class="card-status downloading"><span class="spin"></span> Fetching metadata</span>
+              </div>
             </div>
-          </div>
-          <div class="card-body">
-            <div class="card-title" style="color:var(--error)">Could not fetch video</div>
-            <div class="card-error-msg">${esc(friendlyError(c.error || ''))}</div>
-            <div class="card-error-url">${esc(c.url)}</div>
-          </div>
+          </article>
         `;
-        return;
       }
 
-      // Ready / downloading / done / error states
-      el.className = 'card';
-      const isAudio = currentFormat === 'audio';
-
-      let thumbHtml;
-      if (isAudio) {
-        thumbHtml = `<div class="no-thumb" style="color:var(--accent)"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>`;
-      } else if (c.thumbnail) {
-        thumbHtml = `<img src="${c.thumbnail}" alt="">`;
-      } else {
-        thumbHtml = `<div class="no-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><circle cx="8" cy="8" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>`;
+      if (c.status === 'info-error') {
+        return `
+          <article class="card card-error" id="card-${c.uid}">
+            <button class="remove-btn" title="Remove" aria-label="Remove" onclick="removeCard(${c.uid})">${trashIcon()}</button>
+            <div class="card-thumb">
+              <div class="card-error-icon">${errorIcon()}</div>
+            </div>
+            <div class="card-main">
+              <div>
+                <h3 class="card-title" style="color:var(--error)">Could not fetch media</h3>
+                <div class="card-meta">${esc(sourceLabel(c.url))}</div>
+              </div>
+              <div>
+                <p class="card-error-msg">${esc(friendlyError(c.error || ''))}</p>
+                <p class="card-error-url">${esc(c.url)}</p>
+              </div>
+              <div class="retry-actions">
+                <button class="card-dl-btn error" onclick="retryInfo(${c.uid})">Retry</button>
+              </div>
+            </div>
+          </article>
+        `;
       }
 
-      let qualitySelect = '';
-      let convertSelect = '';
-      let keepOriginalLabel = '';
-      if (!isAudio) {
-        const formats = c.formats || [];
-        const maxSelected = (c.selectedHeight === null || c.selectedHeight === undefined) ? ' selected' : '';
-        const opts = [`<option value=""${maxSelected}>Maximum available</option>`];
-        for (const f of formats) {
-          const sizeStr = formatSize(f.filesize);
-          const text = sizeStr ? `${f.label} — ${sizeStr}` : f.label;
-          const sel = c.selectedHeight === f.height ? ' selected' : '';
-          opts.push(`<option value="${f.height}"${sel}>${esc(text)}</option>`);
-        }
-        const disabled = formats.length <= 1 ? ' disabled' : '';
-        qualitySelect = `<select class="quality-select"${disabled} onchange="pickQuality(${idx}, this.value)">${opts.join('')}</select>`;
-
-        const presetId = c.convertPreset || 'none';
-        const presetOpts = convertPresets.map(p => {
-          const sel = p.id === presetId ? ' selected' : '';
-          return `<option value="${esc(p.id)}"${sel}>${esc(p.label)}</option>`;
-        }).join('');
-        convertSelect = `<select class="convert-select" onchange="pickConvert(${idx}, this.value)">${presetOpts}</select>`;
-
-        if (presetId !== 'none') {
-          const checked = c.keepOriginal ? ' checked' : '';
-          keepOriginalLabel = `<label class="keep-original"><input type="checkbox"${checked} onchange="toggleKeepOriginal(${idx}, this.checked)"> Keep original</label>`;
-        }
-      }
-
-      let actionHtml = '';
-      if (c.status === 'ready') {
-        actionHtml = `<button class="card-dl-btn" onclick="dlCard(${idx})">Download</button>${qualitySelect}${convertSelect}${keepOriginalLabel}`;
-      } else if (c.status === 'downloading' || c.status === 'converting') {
-        const progress = Math.max(0, Math.min(100, c.progress || 0));
-        const isConverting = c.status === 'converting';
-        const label = isConverting ? 'Converting' : 'Downloading';
-        const cls = isConverting ? 'converting' : 'downloading';
-        const etaPart = isConverting ? '' : fmtEta(c.eta);
-        actionHtml = `
-          <div class="progress-wrap">
-            <div class="progress-track"><div class="progress-fill" style="width:${progress}%"></div></div>
-            <span class="progress-text">${progress}%</span>
+      const active = isActive(c);
+      return `
+        <article class="card" id="card-${c.uid}">
+          <button class="remove-btn" title="${active ? 'Cancel before removing' : 'Remove'}" aria-label="Remove" ${active ? 'disabled' : `onclick="removeCard(${c.uid})"`}>${trashIcon()}</button>
+          <div class="card-thumb">
+            ${thumbHtml(c)}
+            <span class="thumb-badge">${esc(thumbBadge(c))}</span>
+            ${c.duration ? `<span class="thumb-time">${esc(fmtDur(c.duration))}</span>` : ''}
           </div>
-          <span class="card-status ${cls}"><span class="spin"></span> ${label}${etaPart}</span>
-          <button class="card-dl-btn cancel" onclick="cancelCard(${idx})">Cancel</button>`;
-      } else if (c.status === 'done') {
-        actionHtml = `<button class="card-dl-btn done" onclick="revealCard(${idx})">Show</button>
-          <button class="card-dl-btn" onclick="saveCard(${idx})">Save As</button>
-          <span class="card-status done">${esc(c.filename || '')}</span>`;
-      } else if (c.status === 'cancelled') {
-        actionHtml = `<button class="card-dl-btn" onclick="dlCard(${idx})">Retry</button>
-          <span class="card-status error">Cancelled</span>`;
-      } else if (c.status === 'error') {
-        actionHtml = `<button class="card-dl-btn" onclick="dlCard(${idx})">Retry</button>
-          <span class="card-status error">${esc(friendlyError(c.error || 'Download failed'))}</span>`;
-      }
-
-      el.innerHTML = `
-        <div class="card-thumb">${thumbHtml}</div>
-        <div class="card-body">
-          <div class="card-title">${esc(c.title || 'Untitled')}</div>
-          <div class="card-meta">${esc(c.uploader)}${c.duration ? ' · ' + fmtDur(c.duration) : ''}</div>
-          <div class="card-actions">${actionHtml}</div>
-        </div>
+          <div class="card-main">
+            <div>
+              <h3 class="card-title">${esc(c.title || 'Untitled')}</h3>
+              <div class="card-meta">${esc(sourceLabel(c.url))}${c.uploader ? ' &middot; ' + esc(c.uploader) : ''}</div>
+            </div>
+            <div>${middleStateHtml(c)}</div>
+            <div>${actionsHtml(c)}</div>
+          </div>
+        </article>
       `;
     }
 
-    function renderDownloadAll() {
-      const existing = document.getElementById('dl-all-bar');
-      if (existing) existing.remove();
-
-      const bar = document.createElement('div');
-      bar.id = 'dl-all-bar';
-      bar.className = 'dl-all-bar';
-      bar.innerHTML = `<button class="dl-all-btn" onclick="dlAll()">Download All</button>`;
-      document.getElementById('cards').appendChild(bar);
-    }
-
-    function pickQuality(idx, value) {
-      cardData[idx].selectedHeight = value === '' ? null : Number(value);
-      renderCard(idx);
-    }
-
-    function pickConvert(idx, value) {
-      cardData[idx].convertPreset = value || 'none';
-      if (cardData[idx].convertPreset === 'none') {
-        cardData[idx].keepOriginal = false;
+    function thumbHtml(c) {
+      if (currentFormat === 'audio') {
+        return `<div class="no-thumb">${audioIcon()}</div>`;
       }
-      renderCard(idx);
+      if (c.thumbnail) {
+        return `<img src="${escAttr(c.thumbnail)}" alt="">`;
+      }
+      return `<div class="no-thumb">${videoIcon()}</div>`;
     }
 
-    function toggleKeepOriginal(idx, checked) {
-      cardData[idx].keepOriginal = !!checked;
+    function middleStateHtml(c) {
+      if (c.status === 'downloading' || c.status === 'converting') {
+        const progress = Math.max(0, Math.min(100, c.progress || 0));
+        const label = c.status === 'converting' ? 'Converting' : 'Downloading';
+        const etaPart = c.status === 'converting' ? '' : fmtEta(c.eta);
+        return `
+          <div class="progress-area">
+            <div class="progress-wrap">
+              <div class="progress-track"><div class="progress-fill" style="width:${progress}%"></div></div>
+              <span class="progress-text">${progress}%</span>
+            </div>
+            <span class="card-status ${c.status}"><span class="spin"></span> ${label}${etaPart}</span>
+          </div>
+        `;
+      }
+      if (c.status === 'done') {
+        return `<span class="card-status done">${esc(c.filename || 'Download complete')}</span>`;
+      }
+      if (c.status === 'cancelled') {
+        return `<span class="card-status error">Cancelled</span>`;
+      }
+      if (c.status === 'error') {
+        return `<span class="card-status error">${esc(friendlyError(c.error || 'Download failed'))}</span>`;
+      }
+      return '';
     }
 
-    async function dlCard(idx) {
-      const c = cardData[idx];
-      c.status = 'downloading';
-      c.error = null;
-      c.progress = 0;
-      c.eta = null;
-      renderCard(idx);
+    function actionsHtml(c) {
+      if (c.status === 'ready') {
+        if (currentFormat === 'audio') {
+          return `
+            <div class="card-controls audio">
+              <div class="select-wrap">
+                <select class="convert-select" disabled><option>No Video Track</option></select>
+              </div>
+              <button class="card-dl-btn" onclick="dlCard(${c.uid})">${downloadIcon()} Download</button>
+            </div>
+          `;
+        }
 
+        const presetId = c.convertPreset || 'none';
+        const keepOriginal = presetId !== 'none'
+          ? `<label class="keep-original"><input type="checkbox"${c.keepOriginal ? ' checked' : ''} onchange="toggleKeepOriginal(${c.uid}, this.checked)"> Keep original</label>`
+          : '';
+        return `
+          <div class="card-controls">
+            <div class="select-wrap">${qualitySelectHtml(c)}</div>
+            <div class="select-wrap">${convertSelectHtml(c)}</div>
+            <button class="card-dl-btn" onclick="dlCard(${c.uid})">${downloadIcon()} Download</button>
+            ${keepOriginal}
+          </div>
+        `;
+      }
+
+      if (c.status === 'downloading' || c.status === 'converting') {
+        return `<button class="card-dl-btn cancel" onclick="cancelCard(${c.uid})">Cancel</button>`;
+      }
+
+      if (c.status === 'done') {
+        return `
+          <div class="done-actions">
+            <button class="card-dl-btn done" onclick="revealCard(${c.uid})">Show</button>
+            <button class="card-dl-btn secondary" onclick="saveCard(${c.uid})">Save As</button>
+          </div>
+        `;
+      }
+
+      if (c.status === 'cancelled' || c.status === 'error') {
+        return `
+          <div class="retry-actions">
+            <button class="card-dl-btn" onclick="dlCard(${c.uid})">Retry</button>
+          </div>
+        `;
+      }
+
+      return '';
+    }
+
+    function qualitySelectHtml(c) {
+      const formats = c.formats || [];
+      const maxSelected = (c.selectedHeight === null || c.selectedHeight === undefined) ? ' selected' : '';
+      const opts = [`<option value=""${maxSelected}>Maximum</option>`];
+      for (const f of formats) {
+        const sizeStr = formatSize(f.filesize);
+        const text = sizeStr ? `${f.label} - ${sizeStr}` : f.label;
+        const sel = c.selectedHeight === f.height ? ' selected' : '';
+        opts.push(`<option value="${f.height}"${sel}>${esc(text)}</option>`);
+      }
+      const disabled = formats.length <= 1 ? ' disabled' : '';
+      return `<select class="quality-select"${disabled} onchange="pickQuality(${c.uid}, this.value)">${opts.join('')}</select>`;
+    }
+
+    function convertSelectHtml(c) {
+      const presetId = c.convertPreset || 'none';
+      const presetOpts = convertPresets.map(p => {
+        const sel = p.id === presetId ? ' selected' : '';
+        const label = p.id === 'none' ? 'Keep original' : p.label;
+        return `<option value="${escAttr(p.id)}"${sel}>${esc(label)}</option>`;
+      }).join('');
+      return `<select class="convert-select" onchange="pickConvert(${c.uid}, this.value)">${presetOpts}</select>`;
+    }
+
+    async function retryInfo(uid) {
+      const c = findCard(uid);
+      if (!c) return;
+      updateCard(uid, { status: 'loading', error: null });
+      renderQueue();
+      try {
+        const res = await fetch('/api/info', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: c.url }),
+        });
+        const data = await res.json();
+        if (data.error) {
+          updateCard(uid, { status: 'info-error', error: data.error });
+        } else {
+          updateCard(uid, {
+            status: 'ready',
+            title: data.title || '',
+            thumbnail: data.thumbnail || '',
+            duration: data.duration,
+            uploader: data.uploader || '',
+            formats: data.formats || [],
+            selectedHeight: null,
+            convertPreset: 'none',
+            keepOriginal: false,
+          });
+        }
+      } catch (err) {
+        updateCard(uid, { status: 'info-error', error: err.message });
+      }
+      renderQueue();
+    }
+
+    function removeCard(uid) {
+      const c = findCard(uid);
+      if (!c || isActive(c)) return;
+      cardData = cardData.filter(item => item.uid !== uid);
+      renderQueue();
+    }
+
+    function clearQueue() {
+      cardData = cardData.filter(isActive);
+      renderQueue();
+    }
+
+    function pickQuality(uid, value) {
+      updateCard(uid, { selectedHeight: value === '' ? null : Number(value) });
+      renderQueue();
+    }
+
+    function pickConvert(uid, value) {
+      const nextPreset = value || 'none';
+      updateCard(uid, {
+        convertPreset: nextPreset,
+        keepOriginal: nextPreset === 'none' ? false : !!(findCard(uid) && findCard(uid).keepOriginal),
+      });
+      renderQueue();
+    }
+
+    function toggleKeepOriginal(uid, checked) {
+      updateCard(uid, { keepOriginal: !!checked });
+    }
+
+    async function dlCard(uid) {
+      const c = findCard(uid);
+      if (!c) return;
+      updateCard(uid, { status: 'downloading', error: null, progress: 0, eta: null });
+      renderQueue();
+
+      const fresh = findCard(uid);
       try {
         const res = await fetch('/api/download', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            url: c.url,
+            url: fresh.url,
             format: currentFormat,
-            max_height: c.selectedHeight ?? null,
-            title: c.title || '',
-            convert_preset: currentFormat === 'video' ? (c.convertPreset || 'none') : 'none',
-            keep_original: currentFormat === 'video' && (c.convertPreset && c.convertPreset !== 'none') && !!c.keepOriginal,
+            max_height: fresh.selectedHeight ?? null,
+            title: fresh.title || '',
+            convert_preset: currentFormat === 'video' ? (fresh.convertPreset || 'none') : 'none',
+            keep_original: currentFormat === 'video' && (fresh.convertPreset && fresh.convertPreset !== 'none') && !!fresh.keepOriginal,
           }),
         });
         const data = await res.json();
         if (data.error) {
-          c.status = 'error';
-          c.error = data.error;
-          renderCard(idx);
+          updateCard(uid, { status: 'error', error: data.error });
+          renderQueue();
           return;
         }
-        c.jobId = data.job_id;
-        pollCard(idx);
+        updateCard(uid, { jobId: data.job_id });
+        pollCard(uid);
       } catch (err) {
-        c.status = 'error';
-        c.error = err.message;
-        renderCard(idx);
+        updateCard(uid, { status: 'error', error: err.message });
+        renderQueue();
       }
     }
 
-    function pollCard(idx) {
-      const c = cardData[idx];
+    function pollCard(uid) {
       const iv = setInterval(async () => {
+        const c = findCard(uid);
+        if (!c) {
+          clearInterval(iv);
+          return;
+        }
         try {
           const res = await fetch(`/api/status/${c.jobId}`);
           const data = await res.json();
           if (data.error) {
             clearInterval(iv);
-            c.status = 'error';
-            c.error = data.error;
-            renderCard(idx);
+            updateCard(uid, { status: 'error', error: data.error });
           } else if (data.status === 'done') {
             clearInterval(iv);
-            c.status = 'done';
-            c.filename = data.filename;
-            renderCard(idx);
+            updateCard(uid, { status: 'done', filename: data.filename });
           } else if (data.status === 'cancelled') {
             clearInterval(iv);
-            c.status = 'cancelled';
-            renderCard(idx);
+            updateCard(uid, { status: 'cancelled' });
           } else if (data.status === 'error') {
             clearInterval(iv);
-            c.status = 'error';
-            c.error = data.error;
-            renderCard(idx);
+            updateCard(uid, { status: 'error', error: data.error });
           } else {
-            c.status = data.status === 'converting' ? 'converting' : 'downloading';
-            c.progress = data.progress || 0;
-            c.eta = data.eta || null;
-            renderCard(idx);
+            updateCard(uid, {
+              status: data.status === 'converting' ? 'converting' : 'downloading',
+              progress: data.progress || 0,
+              eta: data.eta || null,
+            });
           }
+          renderQueue();
         } catch {
           clearInterval(iv);
-          c.status = 'error';
-          c.error = 'Lost connection to server';
-          renderCard(idx);
+          updateCard(uid, { status: 'error', error: 'Lost connection to server' });
+          renderQueue();
         }
       }, 1000);
     }
 
-    async function cancelCard(idx) {
-      const c = cardData[idx];
-      if (!c.jobId) return;
+    async function cancelCard(uid) {
+      const c = findCard(uid);
+      if (!c || !c.jobId) return;
       try {
         await fetch(`/api/cancel/${c.jobId}`, { method: 'POST' });
-        c.status = 'cancelled';
+        updateCard(uid, { status: 'cancelled' });
       } catch (err) {
-        c.status = 'error';
-        c.error = err.message;
+        updateCard(uid, { status: 'error', error: err.message });
       }
-      renderCard(idx);
+      renderQueue();
     }
 
-    function saveCard(idx) {
-      const c = cardData[idx];
-      if (!c.jobId) return;
+    function saveCard(uid) {
+      const c = findCard(uid);
+      if (!c || !c.jobId) return;
       const a = document.createElement('a');
       a.href = `/api/file/${c.jobId}`;
       a.download = c.filename || '';
       a.click();
     }
 
-    async function revealCard(idx) {
-      const c = cardData[idx];
-      if (!c.jobId) return;
+    async function revealCard(uid) {
+      const c = findCard(uid);
+      if (!c || !c.jobId) return;
       await fetch(`/api/reveal/${c.jobId}`, { method: 'POST' });
     }
 
-    async function dlAll() {
-      const btn = document.querySelector('.dl-all-btn');
-      if (btn) { btn.disabled = true; btn.textContent = 'Downloading...'; }
+    function trashIcon() {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>';
+    }
 
-      for (let i = 0; i < cardData.length; i++) {
-        if (cardData[i].status === 'ready') {
-          await dlCard(i);
-        }
-      }
+    function downloadIcon() {
+      return '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11"/><path d="m8 10 4 4 4-4"/><path d="M5 19h14"/></svg>';
+    }
 
-      if (btn) { btn.disabled = false; btn.textContent = 'Download All'; }
+    function videoIcon() {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3z"/></svg>';
+    }
+
+    function audioIcon() {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>';
+    }
+
+    function errorIcon() {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>';
     }
 
     initTheme();

@@ -19,9 +19,9 @@ sys.path.insert(0, APP_DIR)
 HOST = os.environ.get("HOST", "127.0.0.1")
 PORT = int(os.environ.get("PORT", "8899"))
 SERVER_URL = f"http://{HOST}:{PORT}"
-WINDOW_WIDTH = 720
-WINDOW_HEIGHT = 640
-WINDOW_MIN_SIZE = (620, 560)
+WINDOW_WIDTH = 925
+WINDOW_HEIGHT = 820
+WINDOW_MIN_SIZE = (760, 600)
 
 
 def _port_available(port, host=HOST):

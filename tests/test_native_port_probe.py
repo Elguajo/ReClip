@@ -17,9 +17,9 @@ from native import (  # noqa: E402  (import-after-skip is intentional)
 
 
 def test_window_geometry_matches_launch_contract():
-    assert WINDOW_WIDTH == 720
-    assert WINDOW_HEIGHT == 640
-    assert WINDOW_MIN_SIZE == (620, 560)
+    assert WINDOW_WIDTH == 925
+    assert WINDOW_HEIGHT == 820
+    assert WINDOW_MIN_SIZE == (760, 600)
 
 
 def test_port_available_when_nothing_listens():
@@ -107,7 +107,7 @@ def test_main_starts_server_and_window(monkeypatch):
     assert (
         "create_window",
         ("ReClip", "http://127.0.0.1:49152"),
-        {"width": 720, "height": 640, "min_size": (620, 560)},
+        {"width": 925, "height": 820, "min_size": (760, 600)},
     ) in calls
     assert ("start",) in calls
 
