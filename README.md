@@ -64,8 +64,16 @@ xattr -dr com.apple.quarantine /Applications/ReClip.app
 
 ### Run locally on macOS or Linux
 
+Install the media tools first:
+
 ```bash
-brew install yt-dlp ffmpeg    # macOS
+brew install yt-dlp ffmpeg                    # macOS
+sudo apt install ffmpeg && pip install yt-dlp # Debian/Ubuntu
+```
+
+Then clone and start ReClip:
+
+```bash
 git clone https://github.com/Elguajo/ReClip.git
 cd ReClip
 ./reclip.sh
@@ -148,11 +156,13 @@ Each video defaults to **Maximum available**. Selecting a height caps the downlo
 
 ## Conversion Presets
 
-Conversion runs after a successful download and writes the final deliverable into the configured output folder.
+Conversion presets apply to video downloads. MP3/audio mode skips conversion and keeps the audio extraction flow focused on the original MP3 output.
+
+For video mode, conversion runs after a successful download and writes the final deliverable into the configured output folder.
 
 | Preset | Output | Intended use |
 |---|---|---|
-| No conversion | Original download | Fastest path; preserves `yt-dlp` output |
+| No conversion | Original download | Fastest path; leaves `yt-dlp` output unchanged |
 | MP4 (H.264) | `.mp4` | Broad compatibility |
 | MP4 (HEVC / H.265) | `.mp4` | Smaller high-quality deliverables |
 | MOV (ProRes 422) | `.mov` | AV editing workflows |
