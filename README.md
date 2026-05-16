@@ -50,13 +50,7 @@ Compared with the original ReClip repo, this fork adds a more production-minded 
 
 Download the latest `ReClip-*-macOS.zip` from [GitHub Releases](https://github.com/Elguajo/ReClip/releases), unzip it, and move `ReClip.app` to `/Applications`.
 
-After installation: press **Cmd+Space**, type **ReClip**, and launch it.
-
-The release build bundles Python dependencies and `ffmpeg`, so you do not need to clone the repository or run an install script.
-
-Pre-built app bundles are published as GitHub release artifacts, not committed to the source repository. Local builds create `dist/ReClip.app`.
-
-The macOS app is currently ad-hoc signed and not notarized. If macOS blocks the first launch, remove quarantine for this app only:
+After downloading and moving the app, remove quarantine for this app only:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/ReClip.app
