@@ -210,10 +210,12 @@ For code changes:
 
 ## Current Roadmap Status
 
-- **Phase A1:** Dynamic quality detection is implemented and tested.
-- **Phase A2:** Conversion presets are implemented and tested.
-- **Phase A3:** pywebview migration is implemented on macOS; Windows manual validation remains open.
-- **Phase A4:** Windows packaging and GitHub Actions release automation are not complete yet.
+- [x] **Phase A1:** Dynamic quality detection
+- [x] **Phase A2:** Conversion presets
+- [x] **Phase A3:** pywebview migration on macOS
+- [ ] **Phase A3:** Windows manual validation
+- [ ] **Phase A4:** Windows packaging
+- [ ] **Phase A4:** GitHub Actions release automation
 
 See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the phased plan and acceptance criteria.
 
