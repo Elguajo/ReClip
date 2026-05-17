@@ -158,6 +158,9 @@ def test_info_returns_heights_with_labels_and_size_estimates(tmp_path, monkeypat
                     {"format_id": "audio2", "vcodec": "none", "acodec": "opus", "filesize": 4_000_000},
                     # Format with no height — must be filtered out
                     {"format_id": "weird", "vcodec": "avc1", "filesize": 1_000_000},
+                    # Malformed heights — must not break sorting or leak into the UI
+                    {"format_id": "bad-string-height", "height": "1080", "vcodec": "avc1"},
+                    {"format_id": "bad-bool-height", "height": True, "vcodec": "avc1"},
                 ],
             }
 
@@ -495,7 +498,7 @@ def test_download_audio_ignores_max_height(tmp_path, monkeypatch):
 def test_download_rejects_invalid_max_height(tmp_path, monkeypatch):
     client = make_client(tmp_path, monkeypatch)
 
-    for bad in [0, -100, "1080", 1.5, [], {}]:
+    for bad in [0, -100, "1080", 1.5, True, False, [], {}]:
         res = client.post(
             "/api/download",
             json={"url": "https://example.com/video", "format": "video", "max_height": bad},

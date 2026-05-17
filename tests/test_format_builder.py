@@ -35,6 +35,11 @@ def test_non_integer_height_raises_value_error():
         build_format_string("1080")
 
 
+def test_bool_height_raises_value_error():
+    with pytest.raises(ValueError):
+        build_format_string(True)
+
+
 def test_float_height_raises_value_error():
     with pytest.raises(ValueError):
         build_format_string(1080.5)

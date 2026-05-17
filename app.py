@@ -366,16 +366,29 @@ def format_height(height):
     return HEIGHT_LABELS.get(height, f"{height}p")
 
 
+def _format_height_value(value):
+    """Return a positive integer height from yt-dlp metadata, or None."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value if value > 0 else None
+    return None
+
+
 def build_format_string(max_height):
     """Build a yt-dlp format selector string capped at the given height.
 
     None → 'bv*+ba/b' (best available video + best audio, fallback to best combined).
     Positive int → 'bv*[height<=N]+ba/b[height<=N]'.
-    Raises ValueError for non-positive or non-integer input.
+    Raises ValueError for bool, non-positive, or non-integer input.
     """
     if max_height is None:
         return "bv*+ba/b"
-    if not isinstance(max_height, int) or max_height <= 0:
+    if (
+        not isinstance(max_height, int)
+        or isinstance(max_height, bool)
+        or max_height <= 0
+    ):
         raise ValueError(
             f"max_height must be a positive integer or None, got {max_height!r}"
         )
@@ -659,8 +672,8 @@ def get_info():
         # size info still appear (filesize=None) so the dropdown stays complete.
         sizes_by_height = {}
         for f in info.get("formats", []):
-            height = f.get("height")
-            if not height or f.get("vcodec", "none") == "none":
+            height = _format_height_value(f.get("height"))
+            if height is None or f.get("vcodec", "none") == "none":
                 continue
             size = f.get("filesize") or f.get("filesize_approx")
             if size is not None:

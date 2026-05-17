@@ -1039,6 +1039,21 @@
       return `~${bytes} B`;
     }
 
+    function formatHeight(height) {
+      const labels = {
+        4320: '8K (4320p)',
+        2160: '4K (2160p)',
+        1440: '2K (1440p)',
+        1080: 'Full HD (1080p)',
+        720: 'HD (720p)',
+        480: 'SD (480p)',
+        360: '360p',
+        240: '240p',
+        144: '144p',
+      };
+      return labels[height] || `${height}p`;
+    }
+
     function esc(s) {
       const d = document.createElement('div');
       d.textContent = String(s ?? '');
@@ -1324,10 +1339,11 @@
     function qualitySelectHtml(c) {
       const formats = c.formats || [];
       const maxSelected = (c.selectedHeight === null || c.selectedHeight === undefined) ? ' selected' : '';
-      const opts = [`<option value=""${maxSelected}>Maximum</option>`];
+      const opts = [`<option value=""${maxSelected}>Maximum available</option>`];
       for (const f of formats) {
         const sizeStr = formatSize(f.filesize);
-        const text = sizeStr ? `${f.label} - ${sizeStr}` : f.label;
+        const label = f.label || formatHeight(f.height);
+        const text = sizeStr ? `${label} \u2014 ${sizeStr}` : label;
         const sel = c.selectedHeight === f.height ? ' selected' : '';
         opts.push(`<option value="${f.height}"${sel}>${esc(text)}</option>`);
       }
