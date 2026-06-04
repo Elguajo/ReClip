@@ -401,9 +401,14 @@
     .card-main {
       min-width: 0;
       display: grid;
+      grid-template-columns: minmax(0, 1fr);
       grid-template-rows: auto minmax(58px, 1fr) minmax(42px, auto);
       gap: 14px;
       padding-right: 26px;
+    }
+
+    .card-main > * {
+      min-width: 0;
     }
 
     .card-state {
@@ -516,7 +521,7 @@
 
     .card-controls {
       display: grid;
-      grid-template-columns: minmax(160px, 1fr) minmax(190px, 260px) minmax(240px, 0.85fr);
+      grid-template-columns: minmax(130px, 1fr) minmax(150px, 240px) minmax(180px, 0.85fr);
       gap: 10px;
       align-items: center;
     }
