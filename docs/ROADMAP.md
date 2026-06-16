@@ -228,15 +228,15 @@ CONVERSION_PRESETS = [
 
 ### Tasks
 
-- [ ] **Windows packaging:** PyInstaller spec for Windows. Bundle `ffmpeg.exe`, `ffprobe.exe`, `yt-dlp.exe`. Output: a single-folder install or an installer (`.msi` via WiX or NSIS, whichever is simpler). Single .exe is simplest for distribution
-- [ ] `build-windows.ps1` mirroring the macOS build script
-- [ ] **GitHub Actions workflow** `.github/workflows/release.yml`:
+- [x] **Windows packaging:** PyInstaller spec for Windows. Bundle `ffmpeg.exe`, `ffprobe.exe`, and the Python `yt-dlp` package/plugins used by the app. Output: single-folder app zipped as `ReClip-<version>-Windows.zip`
+- [x] `build-windows.ps1` mirroring the macOS build script
+- [x] **GitHub Actions workflow** `.github/workflows/release.yml`:
   - Trigger: push of tag `v*`
   - Matrix: `macos-latest`, `windows-latest`
   - Cache pip and (on Mac) Homebrew
   - Run platform-specific build script
   - Upload artifacts to the GitHub Release
-- [ ] **README updates:** add Windows installation section with first-launch instructions (SmartScreen warning, how to bypass)
+- [x] **README updates:** add Windows installation section with first-launch instructions (SmartScreen warning, how to bypass)
 
 ### Acceptance criteria
 

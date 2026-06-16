@@ -61,6 +61,40 @@ def test_browser_override_still_works_with_bundled_pot_provider(monkeypatch):
     assert reclip_app._browser_candidates() == ["chrome"]
 
 
+def test_windows_bundled_ffmpeg_binaries_use_exe_suffix(tmp_path, monkeypatch):
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    ffmpeg = bin_dir / "ffmpeg.exe"
+    ffprobe = bin_dir / "ffprobe.exe"
+    ffmpeg.write_text("", encoding="utf-8")
+    ffprobe.write_text("", encoding="utf-8")
+
+    monkeypatch.setattr(reclip_app.os, "name", "nt")
+    monkeypatch.setattr(reclip_app, "_runtime_roots", lambda: [str(tmp_path)])
+    monkeypatch.setattr(reclip_app, "BUNDLED_BIN_DIR", str(bin_dir))
+    monkeypatch.setattr(reclip_app.shutil, "which", lambda name: None)
+
+    assert reclip_app._find_bundled_bin_dir() == str(bin_dir)
+    assert reclip_app._ffmpeg_binary() == str(ffmpeg)
+    assert reclip_app._ffprobe_binary() == str(ffprobe)
+    assert reclip_app._ffmpeg_location() == str(bin_dir)
+
+
+def test_windows_bgutil_server_accepts_node_cmd(tmp_path, monkeypatch):
+    root = tmp_path / "runtime"
+    server_dir = root / "bgutil-server"
+    build_dir = server_dir / "build"
+    build_dir.mkdir(parents=True)
+    (build_dir / "generate_once.js").write_text("export {};", encoding="utf-8")
+    node_cmd = server_dir / "node.cmd"
+    node_cmd.write_text("@echo off\n", encoding="utf-8")
+
+    monkeypatch.setattr(reclip_app, "_runtime_roots", lambda: [str(root)])
+
+    assert reclip_app._find_bgutil_server_dir() == str(server_dir)
+    assert reclip_app._find_bgutil_node_path(str(server_dir)) == str(node_cmd)
+
+
 def test_source_run_keeps_browser_cookie_fallbacks_on_macos(monkeypatch):
     monkeypatch.delenv("RECLIP_YT_BROWSER", raising=False)
     monkeypatch.setattr(reclip_app, "BGUTIL_SERVER_DIR", None)

@@ -1,1 +1,1 @@
-pyinstaller; sys_platform == "darwin"
+pyinstaller; sys_platform == "darwin" or sys_platform == "win32"

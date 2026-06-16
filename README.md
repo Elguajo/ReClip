@@ -81,9 +81,15 @@ RECLIP_SERVER_ONLY=1 ./reclip.sh
 
 Then open **http://localhost:8899**.
 
+### Download for Windows
+
+Download the latest `ReClip-*-Windows.zip` from [GitHub Releases](https://github.com/Elguajo/ReClip/releases), unzip it, and run `ReClip.exe` from the extracted `ReClip` folder.
+
+The Windows build is unsigned. On first launch, Windows SmartScreen may show a warning; choose **More info** → **Run anyway** if you trust the build. ReClip uses `pywebview`, so Windows 10/11 also needs the Microsoft Edge WebView2 Runtime. Most current Windows installs already include it.
+
 ### Run locally on Windows
 
-Windows support is in source-level cross-platform mode through `pywebview`. The packaged Windows build/release pipeline is still pending.
+Windows support uses the same Flask app inside a `pywebview` desktop window backed by Edge WebView2.
 
 From PowerShell:
 
@@ -96,7 +102,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Install `ffmpeg` separately and make sure `ffmpeg.exe` and `ffprobe.exe` are on `PATH` until the Windows packaging phase bundles them. On first launch, Windows SmartScreen or WebView2 setup may prompt depending on the machine.
+For source runs, install `ffmpeg` separately and make sure `ffmpeg.exe` and `ffprobe.exe` are on `PATH`. Packaged Windows builds bundle both binaries.
 
 ### Build your own macOS app
 
@@ -106,7 +112,21 @@ brew install python3 ffmpeg
 open dist/ReClip.app
 ```
 
-The standalone build bundles Python dependencies, the local `ffmpeg` binary, a portable Node.js 22 runtime, and the [bgutil POT provider](https://github.com/Brainicism/bgutil-ytdlp-pot-provider) JS server. The first build downloads Node and clones bgutil into `.build-cache/`; later builds reuse the cache. The resulting bundle is ad-hoc signed, not notarized.
+The standalone build bundles Python dependencies, the local `ffmpeg` binary, a portable Bun runtime exposed through a Node-compatible shim, and the [bgutil POT provider](https://github.com/Brainicism/bgutil-ytdlp-pot-provider) JS server. The first build downloads Bun and clones bgutil into `.build-cache/`; later builds reuse the cache. The resulting bundle is ad-hoc signed, not notarized.
+
+### Build your own Windows app
+
+From PowerShell on Windows:
+
+```powershell
+.\build-windows.ps1 -Version v1.1.0
+```
+
+The script creates `release\ReClip-v1.1.0-Windows.zip` plus a matching `.sha256` file. It bundles Python dependencies, `ffmpeg.exe`, `ffprobe.exe`, Bun, and the bgutil POT provider. If `ffmpeg.exe` and `ffprobe.exe` are not on `PATH`, the script downloads a Windows ffmpeg essentials build into `.build-cache\`.
+
+### Release automation
+
+Pushing a tag named `v*` runs `.github/workflows/release.yml`. The workflow builds macOS and Windows artifacts, then publishes all files from `release/` to the matching GitHub Release.
 
 ### Run with Docker
 
@@ -214,8 +234,8 @@ For code changes:
 - [x] **Phase A2:** Conversion presets
 - [x] **Phase A3:** pywebview migration on macOS
 - [ ] **Phase A3:** Windows manual validation
-- [ ] **Phase A4:** Windows packaging
-- [ ] **Phase A4:** GitHub Actions release automation
+- [x] **Phase A4:** Windows packaging implementation
+- [x] **Phase A4:** GitHub Actions release automation implementation
 
 See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the phased plan and acceptance criteria.
 

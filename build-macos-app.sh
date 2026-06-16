@@ -56,6 +56,11 @@ fi
 BUN_VERSION="1.3.14"
 BGUTIL_REF="1.3.1"
 CACHE_DIR="$(pwd)/.build-cache"
+case "$(uname -m)" in
+    arm64) BUN_TARGET="darwin-aarch64" ;;
+    x86_64) BUN_TARGET="darwin-x64" ;;
+    *) echo "Unsupported macOS architecture: $(uname -m)"; exit 1 ;;
+esac
 BUN_DIR="${CACHE_DIR}/bun-v${BUN_VERSION}"
 BUN_BIN="${BUN_DIR}/bun"
 BGUTIL_SRC="${CACHE_DIR}/bgutil-ytdlp-pot-provider"
@@ -64,16 +69,16 @@ BGUTIL_BUNDLED_JS="${BGUTIL_SRC}/server/build-bundled/generate_once.js"
 mkdir -p "${CACHE_DIR}"
 
 if [ ! -x "${BUN_BIN}" ]; then
-    echo "Downloading Bun v${BUN_VERSION} (darwin-aarch64) ..."
+    echo "Downloading Bun v${BUN_VERSION} (${BUN_TARGET}) ..."
     curl -fsSL \
-        "https://github.com/oven-sh/bun/releases/download/bun-v${BUN_VERSION}/bun-darwin-aarch64.zip" \
+        "https://github.com/oven-sh/bun/releases/download/bun-v${BUN_VERSION}/bun-${BUN_TARGET}.zip" \
         -o "${CACHE_DIR}/bun.zip"
     rm -rf "${BUN_DIR}"
     mkdir -p "${BUN_DIR}"
     unzip -q "${CACHE_DIR}/bun.zip" -d "${BUN_DIR}"
-    # Zip ships a `bun-darwin-aarch64/bun` entry; flatten it.
-    mv "${BUN_DIR}/bun-darwin-aarch64/bun" "${BUN_BIN}"
-    rmdir "${BUN_DIR}/bun-darwin-aarch64"
+    # Zip ships a `bun-${BUN_TARGET}/bun` entry; flatten it.
+    mv "${BUN_DIR}/bun-${BUN_TARGET}/bun" "${BUN_BIN}"
+    rmdir "${BUN_DIR}/bun-${BUN_TARGET}"
     chmod +x "${BUN_BIN}"
     rm -f "${CACHE_DIR}/bun.zip"
 fi

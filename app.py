@@ -41,29 +41,39 @@ def _find_runtime_dir(name):
     return os.path.join(APP_DIR, name)
 
 
+def _bin_name(name):
+    return f"{name}.exe" if os.name == "nt" else name
+
+
 def _find_bundled_bin_dir():
     for root in _runtime_roots():
         candidate = os.path.join(root, "bin")
-        if os.path.isfile(os.path.join(candidate, "ffmpeg")):
+        if os.path.isfile(os.path.join(candidate, _bin_name("ffmpeg"))):
             return candidate
     return os.path.join(APP_DIR, "bin")
 
 
 def _find_bgutil_server_dir():
-    # Bundled layout: bgutil-server/{node (bun renamed), build/generate_once.js (bun-bundled JS)}.
+    # Bundled layout: bgutil-server/{node shim, build/generate_once.js (bun-bundled JS)}.
     for root in _runtime_roots():
         candidate = os.path.join(root, "bgutil-server")
         if os.path.isfile(os.path.join(candidate, "build", "generate_once.js")) \
-                and os.path.isfile(os.path.join(candidate, "node")):
+                and _find_bgutil_node_path(candidate):
+            return candidate
+    return None
+
+
+def _find_bgutil_node_path(server_dir):
+    for name in ("node", "node.cmd", "node.bat", "node.exe"):
+        candidate = os.path.join(server_dir, name)
+        if os.path.isfile(candidate):
             return candidate
     return None
 
 
 BUNDLED_BIN_DIR = _find_bundled_bin_dir()
 BGUTIL_SERVER_DIR = _find_bgutil_server_dir()
-BGUTIL_NODE_PATH = (
-    os.path.join(BGUTIL_SERVER_DIR, "node") if BGUTIL_SERVER_DIR else None
-)
+BGUTIL_NODE_PATH = _find_bgutil_node_path(BGUTIL_SERVER_DIR) if BGUTIL_SERVER_DIR else None
 
 if os.path.isdir(BUNDLED_BIN_DIR):
     os.environ["PATH"] = BUNDLED_BIN_DIR + os.pathsep + os.environ.get("PATH", "")
@@ -143,7 +153,7 @@ def _valid_url(url):
 
 
 def _ffmpeg_location():
-    bundled_ffmpeg = os.path.join(BUNDLED_BIN_DIR, "ffmpeg")
+    bundled_ffmpeg = os.path.join(BUNDLED_BIN_DIR, _bin_name("ffmpeg"))
     if os.path.isfile(bundled_ffmpeg):
         return BUNDLED_BIN_DIR
 
@@ -152,14 +162,14 @@ def _ffmpeg_location():
 
 
 def _ffmpeg_binary():
-    bundled = os.path.join(BUNDLED_BIN_DIR, "ffmpeg")
+    bundled = os.path.join(BUNDLED_BIN_DIR, _bin_name("ffmpeg"))
     if os.path.isfile(bundled):
         return bundled
     return shutil.which("ffmpeg")
 
 
 def _ffprobe_binary():
-    bundled = os.path.join(BUNDLED_BIN_DIR, "ffprobe")
+    bundled = os.path.join(BUNDLED_BIN_DIR, _bin_name("ffprobe"))
     if os.path.isfile(bundled):
         return bundled
     return shutil.which("ffprobe")
