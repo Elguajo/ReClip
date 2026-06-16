@@ -13,6 +13,7 @@ assets/*.mp4
 
 .kilo/
 .claude/
+.serena/
 *-claude-pack.zip
 build/
 dist/
