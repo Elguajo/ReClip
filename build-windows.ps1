@@ -39,8 +39,11 @@ if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     throw "git was not found."
 }
 
-$FfmpegExe = (Get-Command ffmpeg -ErrorAction SilentlyContinue).Source
-$FfprobeExe = (Get-Command ffprobe -ErrorAction SilentlyContinue).Source
+$FfmpegCmd = Get-Command ffmpeg -ErrorAction SilentlyContinue
+$FfmpegExe = if ($FfmpegCmd) { $FfmpegCmd.Source } else { $null }
+
+$FfprobeCmd = Get-Command ffprobe -ErrorAction SilentlyContinue
+$FfprobeExe = if ($FfprobeCmd) { $FfprobeCmd.Source } else { $null }
 
 if (-not $FfmpegExe -or -not $FfprobeExe) {
     if (-not (Test-Path $FfmpegZip)) {
@@ -52,8 +55,11 @@ if (-not $FfmpegExe -or -not $FfprobeExe) {
     Remove-Item -Recurse -Force $FfmpegDir -ErrorAction SilentlyContinue
     Expand-Archive -Force $FfmpegZip $FfmpegDir
 
-    $FfmpegExe = (Get-ChildItem $FfmpegDir -Recurse -Filter ffmpeg.exe | Select-Object -First 1).FullName
-    $FfprobeExe = (Get-ChildItem $FfmpegDir -Recurse -Filter ffprobe.exe | Select-Object -First 1).FullName
+    $FfmpegFile = Get-ChildItem $FfmpegDir -Recurse -Filter ffmpeg.exe | Select-Object -First 1
+    $FfmpegExe = if ($FfmpegFile) { $FfmpegFile.FullName } else { $null }
+
+    $FfprobeFile = Get-ChildItem $FfmpegDir -Recurse -Filter ffprobe.exe | Select-Object -First 1
+    $FfprobeExe = if ($FfprobeFile) { $FfprobeFile.FullName } else { $null }
 }
 
 if (-not $FfmpegExe -or -not $FfprobeExe) {
