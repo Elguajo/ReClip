@@ -171,6 +171,23 @@
 
     textarea::placeholder { color: color-mix(in srgb, var(--muted) 42%, transparent); }
 
+    textarea.has-error {
+      border-color: var(--error);
+      box-shadow: 0 0 0 4px rgba(196, 61, 61, 0.09);
+    }
+
+    .input-error {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin-top: -2px;
+      color: var(--error);
+      font-size: 0.72rem;
+      line-height: 1.5;
+    }
+
+    .input-error.visible { display: flex; }
+
     .control-grid {
       display: grid;
       grid-template-columns: 210px minmax(220px, 1fr);
@@ -511,6 +528,12 @@
       white-space: nowrap;
     }
 
+    .card-error .card-state {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+
     .card-error-msg { color: var(--error); }
     .card-error-url { word-break: break-all; }
 
@@ -568,6 +591,7 @@
     }
 
     .keep-original {
+      grid-column: 1 / -1;
       display: inline-flex;
       align-items: center;
       gap: 7px;
@@ -577,7 +601,6 @@
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      white-space: nowrap;
     }
 
     .keep-original input {
@@ -902,6 +925,7 @@
     <main>
       <section class="composer" aria-label="Fetch media">
         <textarea id="urls" placeholder="https://www.youtube.com/watch?v=..." rows="3"></textarea>
+        <p class="input-error" id="inputError" role="alert"></p>
         <div class="control-grid">
           <div class="pill-group" role="tablist" aria-label="Download format">
             <button class="pill active" data-format="video" role="tab" aria-selected="true" onclick="setFormat(this)">Video</button>
@@ -1076,6 +1100,10 @@
       if (err.includes('Private video')) return 'This video is private';
       if (err.includes('HTTP Error 403')) return 'Access denied by the platform';
       if (err.includes('HTTP Error 404')) return 'Video not found';
+      if (err.includes('HTTP Error 429') || err.includes('Too Many Requests')) return 'Rate limited by the platform - wait a bit and try again';
+      if (err.includes('Sign in to confirm your age')) return 'Age-restricted video - sign-in required';
+      if (err.includes('Sign in to confirm you')) return 'The platform is asking to verify you are not a bot - try again later';
+      if (err.includes('Requested format is not available')) return 'The selected quality is no longer available - pick another one';
       if (err.includes('copyright')) return 'Video blocked due to copyright';
       if (err.includes('geo')) return 'Video not available in your region';
       if (err.includes('timed out') || err.includes('Timed out')) return 'Request timed out - try again';
@@ -1123,9 +1151,37 @@
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); go(); }
     });
 
+    document.getElementById('urls').addEventListener('input', () => setInputError(null));
+
+    function setInputError(message) {
+      const el = document.getElementById('inputError');
+      const ta = document.getElementById('urls');
+      if (message) {
+        el.textContent = message;
+        el.classList.add('visible');
+        ta.classList.add('has-error');
+      } else {
+        el.textContent = '';
+        el.classList.remove('visible');
+        ta.classList.remove('has-error');
+      }
+    }
+
     async function go() {
-      const urls = parseUrls(document.getElementById('urls').value);
-      if (!urls.length) return;
+      const rawText = document.getElementById('urls').value;
+      const rawCount = rawText.split(/[\s,]+/).map(u => u.trim()).filter(Boolean).length;
+      const urls = parseUrls(rawText);
+
+      if (!urls.length) {
+        setInputError(rawCount ? 'No valid links found - only http(s) links are supported' : 'Paste at least one link to fetch');
+        return;
+      }
+      if (urls.length < rawCount) {
+        const skipped = rawCount - urls.length;
+        setInputError(`Skipped ${skipped} invalid or duplicate link${skipped > 1 ? 's' : ''}`);
+      } else {
+        setInputError(null);
+      }
 
       const btn = document.getElementById('goBtn');
       btn.disabled = true;
@@ -1301,7 +1357,7 @@
 
         const presetId = c.convertPreset || 'none';
         const keepOriginal = presetId !== 'none'
-          ? `<label class="keep-original"><input type="checkbox"${c.keepOriginal ? ' checked' : ''} onchange="toggleKeepOriginal(${c.uid}, this.checked)"> Keep original</label>`
+          ? `<label class="keep-original" title="If unchecked, the downloaded original is deleted once the conversion finishes"><input type="checkbox"${c.keepOriginal ? ' checked' : ''} onchange="toggleKeepOriginal(${c.uid}, this.checked)"> Keep original (otherwise deleted after conversion)</label>`
           : '';
         return `
           <div class="card-controls">
